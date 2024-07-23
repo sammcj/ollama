@@ -29,6 +29,10 @@ var ErrInvalidHostPort = errors.New("invalid port specified in OLLAMA_HOST")
 var (
 	// Set via OLLAMA_ORIGINS in the environment
 	AllowOrigins []string
+	// Set via OLLAMA_CACHE_TYPE_K in the environment
+	CacheTypeK string
+	// Set via OLLAMA_CACHE_TYPE_V in the environment
+	CacheTypeV string
 	// Set via OLLAMA_DEBUG in the environment
 	Debug bool
 	// Experimental flash attention
@@ -81,6 +85,8 @@ type EnvVar struct {
 func AsMap() map[string]EnvVar {
 	ret := map[string]EnvVar{
 		"OLLAMA_DEBUG":             {"OLLAMA_DEBUG", Debug, "Show additional debug information (e.g. OLLAMA_DEBUG=1)"},
+		"OLLAMA_CACHE_TYPE_K":      {"OLLAMA_CACHE_TYPE_K", CacheTypeK, "Type of cache for keys (default: f16)"},
+		"OLLAMA_CACHE_TYPE_V":      {"OLLAMA_CACHE_TYPE_V", CacheTypeV, "Type of cache for values (default: f16)"},
 		"OLLAMA_FLASH_ATTENTION":   {"OLLAMA_FLASH_ATTENTION", FlashAttention, "Enabled flash attention"},
 		"OLLAMA_HOST":              {"OLLAMA_HOST", Host, "IP Address for the ollama server (default 127.0.0.1:11434)"},
 		"OLLAMA_KEEP_ALIVE":        {"OLLAMA_KEEP_ALIVE", KeepAlive, "The duration that models stay loaded in memory (default \"5m\")"},
@@ -151,6 +157,14 @@ func LoadConfig() {
 		if err == nil {
 			FlashAttention = d
 		}
+	}
+
+	if cacheTypeK := clean("OLLAMA_CACHE_TYPE_K"); cacheTypeK != "" {
+		CacheTypeK = cacheTypeK
+	}
+
+	if cacheTypeV := clean("OLLAMA_CACHE_TYPE_V"); cacheTypeV != "" {
+		CacheTypeV = cacheTypeV
 	}
 
 	RunnersDir = clean("OLLAMA_RUNNERS_DIR")

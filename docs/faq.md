@@ -273,3 +273,34 @@ The following server settings may be used to adjust how Ollama handles concurren
 - `OLLAMA_MAX_QUEUE` - The maximum number of requests Ollama will queue when busy before rejecting additional requests. The default is 512
 
 Note: Windows with Radeon GPUs currently default to 1 model maximum due to limitations in ROCm v5.7 for available VRAM reporting.  Once ROCm v6.2 is available, Windows Radeon will follow the defaults above.  You may enable concurrent model loads on Radeon on Windows, but ensure you don't load more models than will fit into your GPUs VRAM.
+
+## How can I set the K/V (context) cache quantization?
+
+K/V (context) cache quantization is a feature that allows you to reduce the memory footprint of the context cache by quantizing the values stored in the cache at the expensive of a loss in quality of the values stored.
+
+Supported values: `f32`, `f16` (default), `q8_0`,  `q5_1`,  `q5_0`, `q4_1`,  `iq4_nl`, `q4_0`.
+
+The following environment variables can be used to control the K/V (context) cache quantization:
+
+- `OLLAMA_CACHE_TYPE_K` - The quantization type for the keys stored in the K/V (context) cache.
+- `OLLAMA_CACHE_TYPE_V` - The quantization type for the values stored in the K/V (context) cache.
+
+You may also set these as parameters on the command line:
+
+```shell
+/set parameter cache_type_k q8_0
+/set parameter cache_type_v q8_0
+```
+
+And via the Ollama API:
+
+```shell
+curl http://localhost:11434/api/generate -d '{
+  "model": "llama3",
+  "prompt": "What color is the sky at different times of the day? Respond using JSON",
+  "options": {
+    "cache_type_k": "q8_0",
+    "cache_type_v": "q8_0"
+  }
+}'
+```
