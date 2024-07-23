@@ -316,11 +316,12 @@ curl http://localhost:11434/api/generate -d '{
     "num_gpu": 1,
     "main_gpu": 0,
     "low_vram": false,
-    "f16_kv": true,
     "vocab_only": false,
     "use_mmap": true,
     "use_mlock": false,
-    "num_thread": 8
+    "num_thread": 8,
+    "cache_type_k": "q8_0",
+    "cache_type_v": "q8_0"
   }
 }'
 ```

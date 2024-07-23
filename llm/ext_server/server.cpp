@@ -2019,7 +2019,6 @@ static void server_print_usage(const char *argv0, const gpt_params &params,
     printf("  --pooling {none,mean,cls}\n");
     printf("                        pooling type for embeddings, use model default if unspecified\n");
     printf("  -b N, --batch-size N      batch size for prompt processing (default: %d)\n", params.n_batch);
-    printf("  --memory-f32              use f32 instead of f16 for memory key+value (default: disabled)\n");
     printf("                            not recommended: doubles context memory required and no measurable increase in quality\n");
     if (llama_supports_mlock())
     {
