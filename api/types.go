@@ -606,8 +606,6 @@ func DefaultOptions() Options {
 			UseMLock:  false,
 			UseMMap:   nil,
 			UseNUMA:   false,
-			CacheTypeK: "f16",
-			CacheTypeV: "f16",
 		},
 	}
 }
