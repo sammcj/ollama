@@ -159,12 +159,19 @@ func LoadConfig() {
 		}
 	}
 
+	// debugging is temporary
 	if cacheTypeK := clean("OLLAMA_CACHE_TYPE_K"); cacheTypeK != "" {
-		CacheTypeK = cacheTypeK
+    CacheTypeK = cacheTypeK
+    slog.Debug("OLLAMA_CACHE_TYPE_K set from environment", "value", CacheTypeK)
+	} else {
+			slog.Debug("OLLAMA_CACHE_TYPE_K not set in environment")
 	}
 
 	if cacheTypeV := clean("OLLAMA_CACHE_TYPE_V"); cacheTypeV != "" {
-		CacheTypeV = cacheTypeV
+			CacheTypeV = cacheTypeV
+			slog.Debug("OLLAMA_CACHE_TYPE_V set from environment", "value", CacheTypeV)
+	} else {
+			slog.Debug("OLLAMA_CACHE_TYPE_V not set in environment")
 	}
 
 	RunnersDir = clean("OLLAMA_RUNNERS_DIR")

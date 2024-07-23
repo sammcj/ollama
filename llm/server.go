@@ -282,14 +282,36 @@ func NewLlamaServer(gpus gpu.GpuInfoList, model string, ggml *GGML, adapters, pr
 		params = append(params, "--flash-attn")
 	}
 
-	// Set the K/V cache types if specified
+
+	// temporary debug logging
+	slog.Debug("Cache types before assignment",
+    "opts.CacheTypeK", opts.CacheTypeK,
+    "opts.CacheTypeV", opts.CacheTypeV,
+    "envconfig.CacheTypeK", envconfig.CacheTypeK,
+    "envconfig.CacheTypeV", envconfig.CacheTypeV)
+
 	if opts.CacheTypeK == "" {
-		opts.CacheTypeK = envconfig.CacheTypeK
+			opts.CacheTypeK = envconfig.CacheTypeK
 	}
 	if opts.CacheTypeV == "" {
 			opts.CacheTypeV = envconfig.CacheTypeV
 	}
+
 	setCacheTypeParams(&params, &opts, flashAttnEnabled)
+
+
+slog.Debug("Cache types after assignment",
+    "opts.CacheTypeK", opts.CacheTypeK,
+    "opts.CacheTypeV", opts.CacheTypeV)
+
+	// Set the K/V cache types if specified
+	// if opts.CacheTypeK == "" {
+	// 	opts.CacheTypeK = envconfig.CacheTypeK
+	// }
+	// if opts.CacheTypeV == "" {
+	// 		opts.CacheTypeV = envconfig.CacheTypeV
+	// }
+	// setCacheTypeParams(&params, &opts, flashAttnEnabled)
 
 	// Windows CUDA should not use mmap for best performance
 	// Linux  with a model larger than free space, mmap leads to thrashing
