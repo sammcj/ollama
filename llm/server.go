@@ -417,6 +417,7 @@ slog.Debug("Cache types after assignment",
 		s.cmd.Env = os.Environ()
 		s.cmd.Stdout = os.Stdout
 		s.cmd.Stderr = s.status
+		s.cmd.SysProcAttr = LlamaServerSysProcAttr
 
 		envWorkarounds := [][2]string{}
 		for _, gpu := range gpus {
