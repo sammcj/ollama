@@ -80,6 +80,50 @@ func LoadModel(model string, maxArraySize int) (*GGML, error) {
 	return ggml, err
 }
 
+// setCacheTypeParams sets the K/V cache type parameters if specified
+func setCacheTypeParams(params *[]string, opts *api.Options, flashAttnEnabled bool) {
+	// Internal function to validate KV cache type
+	isValidKVCacheType := func(cacheType string) bool {
+			switch cacheType {
+			case "f16", "f32", "q8_0", "q4_0", "q4_1", "q5_0", "q5_1", "iq4_nl":
+					return true
+			}
+			return false
+	}
+
+	// Internal function to set cache type parameter
+	setCacheTypeParam := func(paramName, cacheType string) {
+			if isValidKVCacheType(cacheType) {
+					if cacheType == "f16" || cacheType == "f32" || flashAttnEnabled {
+							*params = append(*params, paramName, cacheType)
+					} else {
+							slog.Warn("cannot set cache type: requires flash attention to be enabled", "param", paramName, "type", cacheType)
+					}
+			} else if cacheType != "" {
+					slog.Warn("invalid cache type", "param", paramName, "type", cacheType)
+			}
+	}
+
+	// Determine cache types, prioritizing parameter options
+	cacheTypeK := opts.CacheTypeK
+	if cacheTypeK == "" {
+			cacheTypeK = envconfig.CacheTypeK
+	}
+
+	cacheTypeV := opts.CacheTypeV
+	if cacheTypeV == "" {
+			cacheTypeV = envconfig.CacheTypeV
+	}
+
+	// Set cache type parameters
+	if cacheTypeK != "" {
+			setCacheTypeParam("--cache-type-k", cacheTypeK)
+	}
+	if cacheTypeV != "" {
+			setCacheTypeParam("--cache-type-v", cacheTypeV)
+	}
+}
+
 // NewLlamaServer will run a server for the given GPUs
 // The gpu list must be a single family.
 func NewLlamaServer(gpus gpu.GpuInfoList, model string, ggml *GGML, adapters, projectors []string, opts api.Options, numParallel int) (LlamaServer, error) {
@@ -217,10 +261,6 @@ func NewLlamaServer(gpus gpu.GpuInfoList, model string, ggml *GGML, adapters, pr
 		params = append(params, "--threads", fmt.Sprintf("%d", opts.NumThread))
 	}
 
-	if !opts.F16KV {
-		params = append(params, "--memory-f32")
-	}
-
 	flashAttnEnabled := envconfig.FlashAttention
 
 	for _, g := range gpus {
@@ -241,6 +281,15 @@ func NewLlamaServer(gpus gpu.GpuInfoList, model string, ggml *GGML, adapters, pr
 	if flashAttnEnabled {
 		params = append(params, "--flash-attn")
 	}
+
+	// Set the K/V cache types if specified
+	if opts.CacheTypeK == "" {
+		opts.CacheTypeK = envconfig.CacheTypeK
+	}
+	if opts.CacheTypeV == "" {
+		opts.CacheTypeV = envconfig.CacheTypeV
+	}
+	setCacheTypeParams(&params, &opts, flashAttnEnabled)
 
 	// Windows CUDA should not use mmap for best performance
 	// Linux  with a model larger than free space, mmap leads to thrashing
@@ -740,6 +789,8 @@ func (s *llmServer) Completion(ctx context.Context, req CompletionRequest, fn fu
 		"penalize_nl":       req.Options.PenalizeNewline,
 		"seed":              req.Options.Seed,
 		"stop":              req.Options.Stop,
+		"cache_type_k":      req.Options.CacheTypeK,
+		"cache_type_v":      req.Options.CacheTypeV,
 		"image_data":        req.Images,
 		"cache_prompt":      true,
 	}

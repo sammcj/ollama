@@ -40,6 +40,12 @@ func TestConfig(t *testing.T) {
 	t.Setenv("OLLAMA_KEEP_ALIVE", "-1")
 	LoadConfig()
 	require.Equal(t, time.Duration(math.MaxInt64), KeepAlive)
+	t.Setenv("OLLAMA_CACHE_TYPE_K", "q8_0")
+	LoadConfig()
+	require.Equal(t, "q8_0", CacheTypeK)
+	t.Setenv("OLLAMA_CACHE_TYPE_K", "f16")
+	LoadConfig()
+	require.Equal(t, "f16", CacheTypeK)
 }
 
 func TestClientFromEnvironment(t *testing.T) {
