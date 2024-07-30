@@ -91,13 +91,13 @@ func setCacheTypeParams(params *[]string, opts *api.Options, flashAttnEnabled bo
 			return false
 	}
 
-	// Helper function to set cache type parameter
+	// Internal function to set cache type parameter
 	setCacheTypeParam := func(paramName, cacheType string) {
 			if isValidKVCacheType(cacheType) {
 					if cacheType == "f16" || cacheType == "f32" || flashAttnEnabled {
 							*params = append(*params, paramName, cacheType)
 					} else {
-							slog.Warn("cache type not set: requires flash attention to be enabled", "param", paramName, "type", cacheType)
+							slog.Warn("cannot set cache type: requires flash attention to be enabled", "param", paramName, "type", cacheType)
 					}
 			} else if cacheType != "" {
 					slog.Warn("invalid cache type", "param", paramName, "type", cacheType)
@@ -282,36 +282,14 @@ func NewLlamaServer(gpus gpu.GpuInfoList, model string, ggml *GGML, adapters, pr
 		params = append(params, "--flash-attn")
 	}
 
-
-	// temporary debug logging
-	slog.Debug("Cache types before assignment",
-    "opts.CacheTypeK", opts.CacheTypeK,
-    "opts.CacheTypeV", opts.CacheTypeV,
-    "envconfig.CacheTypeK", envconfig.CacheTypeK,
-    "envconfig.CacheTypeV", envconfig.CacheTypeV)
-
+	// Set the K/V cache types if specified
 	if opts.CacheTypeK == "" {
-			opts.CacheTypeK = envconfig.CacheTypeK
+		opts.CacheTypeK = envconfig.CacheTypeK
 	}
 	if opts.CacheTypeV == "" {
-			opts.CacheTypeV = envconfig.CacheTypeV
+		opts.CacheTypeV = envconfig.CacheTypeV
 	}
-
 	setCacheTypeParams(&params, &opts, flashAttnEnabled)
-
-
-slog.Debug("Cache types after assignment",
-    "opts.CacheTypeK", opts.CacheTypeK,
-    "opts.CacheTypeV", opts.CacheTypeV)
-
-	// Set the K/V cache types if specified
-	// if opts.CacheTypeK == "" {
-	// 	opts.CacheTypeK = envconfig.CacheTypeK
-	// }
-	// if opts.CacheTypeV == "" {
-	// 		opts.CacheTypeV = envconfig.CacheTypeV
-	// }
-	// setCacheTypeParams(&params, &opts, flashAttnEnabled)
 
 	// Windows CUDA should not use mmap for best performance
 	// Linux  with a model larger than free space, mmap leads to thrashing

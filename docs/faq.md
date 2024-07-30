@@ -274,11 +274,15 @@ The following server settings may be used to adjust how Ollama handles concurren
 
 Note: Windows with Radeon GPUs currently default to 1 model maximum due to limitations in ROCm v5.7 for available VRAM reporting.  Once ROCm v6.2 is available, Windows Radeon will follow the defaults above.  You may enable concurrent model loads on Radeon on Windows, but ensure you don't load more models than will fit into your GPUs VRAM.
 
+## How does Ollama load models on multiple GPUs?
+
+Installing multiple GPUs of the same brand can be a great way to increase your available VRAM to load larger models.  When you load a new model, Ollama evaluates the required VRAM for the model against what is currently available.  If the model will entirely fit on any single GPU, Ollama will load the model on that GPU.  This typically provides the best performance as it reduces the amount of data transfering across the PCI bus during inference.  If the model does not fit entirely on one GPU, then it will be spread across all the available GPUs.
+
 ## How can I set the K/V (context) cache quantization?
 
 K/V (context) cache quantization is a feature that allows you to reduce the memory footprint of the context cache by quantizing the values stored in the cache at the expensive of a loss in quality of the values stored.
 
-Supported values: `f32`, `f16` (default), `q8_0`,  `q5_1`,  `q5_0`, `q4_1`,  `iq4_nl`, `q4_0`.
+Supported values: `f32`, `f16` (default), `q8_0`, and `q4_0`, the following may be supported but can depend on your model's quantisation type: `q5_1`,  `q5_0`, `q4_1`,  `iq4_nl`.
 
 The following environment variables can be used to control the K/V (context) cache quantization:
 
