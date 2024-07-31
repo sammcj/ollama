@@ -105,23 +105,16 @@ func setCacheTypeParams(params *[]string, opts *api.Options, flashAttnEnabled bo
 	}
 
 	// Determine cache types, prioritizing parameter options
-	cacheTypeK := opts.CacheTypeK
-	if cacheTypeK == "" {
-			cacheTypeK = envconfig.CacheTypeK
+	if opts.CacheTypeK == "" {
+		opts.CacheTypeK = envconfig.CacheTypeK
 	}
-
-	cacheTypeV := opts.CacheTypeV
-	if cacheTypeV == "" {
-			cacheTypeV = envconfig.CacheTypeV
+	if opts.CacheTypeV == "" {
+			opts.CacheTypeV = envconfig.CacheTypeV
 	}
 
 	// Set cache type parameters
-	if cacheTypeK != "" {
-			setCacheTypeParam("--cache-type-k", cacheTypeK)
-	}
-	if cacheTypeV != "" {
-			setCacheTypeParam("--cache-type-v", cacheTypeV)
-	}
+	setCacheTypeParam("--cache-type-k", opts.CacheTypeK)
+	setCacheTypeParam("--cache-type-v", opts.CacheTypeV)
 }
 
 // NewLlamaServer will run a server for the given GPUs

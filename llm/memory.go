@@ -313,6 +313,9 @@ func estimateKvCacheSize(cacheType string, numCtx, blockCount, embeddingHeadCoun
 
 	// fp16 k,v = sizeof(float16) * n_ctx * n_layer * (n_embd_head_k + n_embd_head_v) * n_head_kv
 	switch cacheType {
+	case "":
+		// Default to fp16 if empty string
+		bytesPerElement = 2
 	case "fp16":
 		bytesPerElement = 2
 	case "q4_0", "q4_1":
