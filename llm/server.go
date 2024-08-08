@@ -147,9 +147,9 @@ func NewLlamaServer(gpus gpu.GpuInfoList, model string, ggml *GGML, adapters, pr
 	}
 	if len(gpus) == 1 && gpus[0].Library == "cpu" {
 		cpuRunner = serverForCpu()
-		estimate = EstimateGPULayers(gpus, ggml, projectors, opts)
+		estimate = EstimateGPULayers(gpus, ggml, projectors, &opts)
 	} else {
-		estimate = EstimateGPULayers(gpus, ggml, projectors, opts)
+		estimate = EstimateGPULayers(gpus, ggml, projectors, &opts)
 
 		switch {
 		case gpus[0].Library == "metal" && estimate.VRAMSize > systemTotalMemory:

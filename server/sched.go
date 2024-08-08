@@ -798,7 +798,7 @@ func (s *Scheduler) unloadAllRunners() {
 // If not, pick a runner to unload, else return nil and the request can be loaded
 func (s *Scheduler) maybeFindCPURunnerToUnload(req *LlmRequest, ggml *llm.GGML, gpus gpu.GpuInfoList) *runnerRef {
 	slog.Debug("evaluating if CPU model load will fit in available system memory")
-	estimate := llm.EstimateGPULayers(gpus, ggml, req.model.ProjectorPaths, req.opts)
+	estimate := llm.EstimateGPULayers(gpus, ggml, req.model.ProjectorPaths, &req.opts)
 	if estimate.TotalSize <= gpus[0].FreeMemory {
 		slog.Debug("cpu inference mode, model fits in available system memory", "model", format.HumanBytes2(estimate.TotalSize), "available", format.HumanBytes2(gpus[0].FreeMemory))
 		return nil
