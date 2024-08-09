@@ -115,14 +115,11 @@ func (s *Scheduler) Run(ctx context.Context) {
 // selectStr returns the first non-empty value in a list of strings
 // (e.g. selectStr("", "foo", "bar") -> "foo")
 func selectStr(values ...string) string {
-	slog.Debug("selectStr called", "values", values)
 	for _, v := range values {
 		if v != "" {
-			slog.Debug("selectStr returning", "value", v)
 			return v
 		}
 	}
-	slog.Debug("selectStr returning empty string")
 	return ""
 }
 
