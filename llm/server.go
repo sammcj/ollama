@@ -103,10 +103,6 @@ func LoadModel(model string, maxArraySize int) (*GGML, error) {
 
 // setCacheTypeParams sets the K/V cache type parameters if specified
 func setCacheTypeParams(params *[]string, opts *api.Options, flashAttnEnabled bool) {
-	slog.Debug("Entering setCacheTypeParams",
-		"CacheTypeK", opts.CacheTypeK,
-		"CacheTypeV", opts.CacheTypeV)
-
 	setCacheTypeParam := func(paramName, cacheType string) {
 		if !validKVCacheTypes[cacheType] {
 			if cacheType != "" {
@@ -127,10 +123,6 @@ func setCacheTypeParams(params *[]string, opts *api.Options, flashAttnEnabled bo
 	// Determine cache types, prioritizing parameter options and set cache type parameters
 	setCacheTypeParam("--cache-type-k", selectStr(opts.CacheTypeK, envconfig.CacheTypeK()))
 	setCacheTypeParam("--cache-type-v", selectStr(opts.CacheTypeV, envconfig.CacheTypeV()))
-
-	slog.Debug("Exiting setCacheTypeParams",
-		"CacheTypeK", opts.CacheTypeK,
-		"CacheTypeV", opts.CacheTypeV)
 }
 
 // NewLlamaServer will run a server for the given GPUs
@@ -291,15 +283,7 @@ func NewLlamaServer(gpus gpu.GpuInfoList, model string, ggml *GGML, adapters, pr
 		params = append(params, "--flash-attn")
 	}
 
-	slog.Debug("Cache types after setting in NewLlamaServer",
-		"CacheTypeK", opts.CacheTypeK,
-		"CacheTypeV", opts.CacheTypeV)
-
 	setCacheTypeParams(&params, &opts, flashAttnEnabled)
-
-	slog.Debug("Cache types after setCacheTypeParams",
-		"CacheTypeK", opts.CacheTypeK,
-		"CacheTypeV", opts.CacheTypeV)
 
 	// Windows CUDA should not use mmap for best performance
 	// Linux  with a model larger than free space, mmap leads to thrashing

@@ -178,6 +178,10 @@ func (s *Scheduler) processPending(ctx context.Context) {
 						gpus = s.getGpuFn()
 					}
 
+					// Set the cache quantisation type
+					pending.opts.CacheTypeK = selectStr(pending.opts.CacheTypeK, envconfig.CacheTypeK())
+					pending.opts.CacheTypeV = selectStr(pending.opts.CacheTypeV, envconfig.CacheTypeV())
+
 					if envconfig.MaxRunners() <= 0 {
 						// No user specified MaxRunners, so figure out what automatic setting to use
 						// If all GPUs have reliable free memory reporting, defaultModelsPerGPU * the number of GPUs
@@ -199,13 +203,6 @@ func (s *Scheduler) processPending(ctx context.Context) {
 							slog.Info("one or more GPUs detected that are unable to accurately report free memory - disabling default concurrency")
 						}
 					}
-
-					pending.opts.CacheTypeK = selectStr(pending.opts.CacheTypeK, envconfig.CacheTypeK())
-					pending.opts.CacheTypeV = selectStr(pending.opts.CacheTypeV, envconfig.CacheTypeV())
-
-					slog.Debug("Before calling PredictServerFit in processPending",
-						"CacheTypeK", pending.opts.CacheTypeK,
-						"CacheTypeV", pending.opts.CacheTypeV)
 
 					// Load model for fitting
 					ggml, err := llm.LoadModel(pending.model.ModelPath, 0)
@@ -237,12 +234,6 @@ func (s *Scheduler) processPending(ctx context.Context) {
 						// else we need to expire a runner
 					} else if loadedCount == 0 {
 						// No models loaded. Load the model but prefer the best fit.
-						pending.opts.CacheTypeK = selectStr(pending.opts.CacheTypeK, envconfig.CacheTypeK())
-						pending.opts.CacheTypeV = selectStr(pending.opts.CacheTypeV, envconfig.CacheTypeV())
-
-						slog.Debug("Before calling fit functions in processPending",
-							"CacheTypeK", pending.opts.CacheTypeK,
-							"CacheTypeV", pending.opts.CacheTypeV)
 						g := pickBestFullFitByLibrary(pending, ggml, gpus, &numParallel)
 						if g != nil {
 							gpus = g
@@ -732,9 +723,6 @@ func pickBestFullFitByLibrary(req *LlmRequest, ggml *llm.GGML, gpus gpu.GpuInfoL
 			req.opts.NumCtx = req.origNumCtx * p
 			if !envconfig.SchedSpread() {
 				for _, g := range sgl {
-					slog.Debug("Before calling PredictServerFit in load",
-						"CacheTypeK", req.opts.CacheTypeK,
-						"CacheTypeV", req.opts.CacheTypeV)
 					if ok, estimatedVRAM = llm.PredictServerFit([]gpu.GpuInfo{g}, ggml, req.model.AdapterPaths, req.model.ProjectorPaths, *req.opts); ok {
 						slog.Info("new model will fit in available VRAM in single GPU, loading", "model", req.model.ModelPath, "gpu", g.ID, "parallel", p, "available", g.FreeMemory, "required", format.HumanBytes2(estimatedVRAM))
 						*numParallel = p
@@ -751,9 +739,6 @@ func pickBestFullFitByLibrary(req *LlmRequest, ggml *llm.GGML, gpus gpu.GpuInfoL
 		// Now try all the GPUs
 		for _, p := range numParallelToTry {
 			req.opts.NumCtx = req.origNumCtx * p
-			slog.Debug("Before calling PredictServerFit in load",
-				"CacheTypeK", req.opts.CacheTypeK,
-				"CacheTypeV", req.opts.CacheTypeV)
 			if ok, estimatedVRAM = llm.PredictServerFit(sgl, ggml, req.model.AdapterPaths, req.model.ProjectorPaths, *req.opts); ok {
 				slog.Info("new model will fit in available VRAM, loading", "model", req.model.ModelPath, "library", sgl[0].Library, "parallel", p, "required", format.HumanBytes2(estimatedVRAM))
 				*numParallel = p
@@ -774,9 +759,6 @@ func pickBestPartialFitByLibrary(req *LlmRequest, ggml *llm.GGML, gpus gpu.GpuIn
 	var bestEstimate uint64
 	var bestFit int
 	for i, gl := range byLibrary {
-		slog.Debug("Before calling PredictServerFit in load",
-			"CacheTypeK", req.opts.CacheTypeK,
-			"CacheTypeV", req.opts.CacheTypeV)
 		_, estimatedVRAM := llm.PredictServerFit(gl, ggml, req.model.AdapterPaths, req.model.ProjectorPaths, *req.opts)
 		if estimatedVRAM > bestEstimate {
 			bestEstimate = estimatedVRAM

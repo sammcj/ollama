@@ -13,15 +13,10 @@ import (
 
 // This algorithm looks for a complete fit to determine if we need to unload other models
 func PredictServerFit(allGpus gpu.GpuInfoList, ggml *GGML, adapters, projectors []string, opts api.Options) (bool, uint64) {
-	slog.Debug("Entering PredictServerFit",
-		"CacheTypeK", opts.CacheTypeK,
-		"CacheTypeV", opts.CacheTypeV)
-
 	// Split up the GPUs by type and try them
 	var estimatedVRAM uint64
 	for _, gpus := range allGpus.ByLibrary() {
 		var layerCount int
-		slog.Debug("Before EstimateGPULayers call", "CacheTypeK", opts.CacheTypeK, "CacheTypeV", opts.CacheTypeV)
 		estimate := EstimateGPULayers(gpus, ggml, projectors, &opts)
 		layerCount, estimatedVRAM = estimate.Layers, estimate.VRAMSize
 		if opts.NumGPU < 0 {
@@ -72,10 +67,6 @@ type MemoryEstimate struct {
 // Given a model and one or more GPU targets, predict how many layers and bytes we can load, and the total size
 // The GPUs provided must all be the same Library
 func EstimateGPULayers(gpus []gpu.GpuInfo, ggml *GGML, projectors []string, opts *api.Options) MemoryEstimate {
-	slog.Debug("Entering EstimateGPULayers",
-		"CacheTypeK", opts.CacheTypeK,
-		"CacheTypeV", opts.CacheTypeV)
-
 	// Graph size for a partial offload, applies to all GPUs
 	var graphPartialOffload uint64
 
@@ -125,11 +116,10 @@ func EstimateGPULayers(gpus []gpu.GpuInfo, ggml *GGML, projectors []string, opts
 	}
 
 	// Estimate the memory required for K and V caches separately
-	slog.Debug("Cache types before estimation", "CacheTypeK", opts.CacheTypeK, "CacheTypeV", opts.CacheTypeV)
 	kSize := estimateKvCacheSize(opts.CacheTypeK, uint64(opts.NumCtx), ggml.KV().BlockCount(), ggml.KV().EmbeddingHeadCountK(), ggml.KV().HeadCountKV())
 	vSize := estimateKvCacheSize(opts.CacheTypeV, uint64(opts.NumCtx), ggml.KV().BlockCount(), ggml.KV().EmbeddingHeadCountV(), ggml.KV().HeadCountKV())
 	kv := kSize + vSize
-	slog.Debug("Estimated KV cache size", "KSize", kSize, "VSize", vSize, "KV", kv)
+
 	// KV is proportional to the number of layers
 	layerSize += kv / ggml.KV().BlockCount()
 
