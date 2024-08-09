@@ -75,7 +75,12 @@ type MemoryEstimate struct {
 // The GPUs provided must all be the same Library
 func EstimateGPULayers(gpus []gpu.GpuInfo, ggml *GGML, projectors []string, opts *api.Options) MemoryEstimate {
 	// TODO: debugging, will remove before merging
-	slog.Debug("Entering EstimateGPULayers", "CacheTypeK", opts.CacheTypeK, "CacheTypeV", opts.CacheTypeV)
+	slog.Debug("Entering EstimateGPULayers",
+		"CacheTypeK", opts.CacheTypeK,
+		"CacheTypeV", opts.CacheTypeV,
+		"NumCtx", opts.NumCtx,
+		"NumGPU", opts.NumGPU,
+		"opts", fmt.Sprintf("%+v", opts))
 
 	// Graph size for a partial offload, applies to all GPUs
 	var graphPartialOffload uint64
