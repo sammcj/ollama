@@ -291,9 +291,6 @@ func NewLlamaServer(gpus gpu.GpuInfoList, model string, ggml *GGML, adapters, pr
 		params = append(params, "--flash-attn")
 	}
 
-	opts.CacheTypeK = selectStr(opts.CacheTypeK, envconfig.CacheTypeK())
-	opts.CacheTypeV = selectStr(opts.CacheTypeV, envconfig.CacheTypeV())
-
 	slog.Debug("Cache types after setting in NewLlamaServer",
 		"CacheTypeK", opts.CacheTypeK,
 		"CacheTypeV", opts.CacheTypeV)

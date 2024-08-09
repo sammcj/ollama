@@ -15,9 +15,7 @@ import (
 func PredictServerFit(allGpus gpu.GpuInfoList, ggml *GGML, adapters, projectors []string, opts api.Options) (bool, uint64) {
 	slog.Debug("Entering PredictServerFit",
 		"CacheTypeK", opts.CacheTypeK,
-		"CacheTypeV", opts.CacheTypeV,
-		"NumCtx", opts.NumCtx,
-		"NumGPU", opts.NumGPU)
+		"CacheTypeV", opts.CacheTypeV)
 
 	// Split up the GPUs by type and try them
 	var estimatedVRAM uint64
@@ -74,13 +72,9 @@ type MemoryEstimate struct {
 // Given a model and one or more GPU targets, predict how many layers and bytes we can load, and the total size
 // The GPUs provided must all be the same Library
 func EstimateGPULayers(gpus []gpu.GpuInfo, ggml *GGML, projectors []string, opts *api.Options) MemoryEstimate {
-	// TODO: debugging, will remove before merging
 	slog.Debug("Entering EstimateGPULayers",
 		"CacheTypeK", opts.CacheTypeK,
-		"CacheTypeV", opts.CacheTypeV,
-		"NumCtx", opts.NumCtx,
-		"NumGPU", opts.NumGPU,
-		"opts", fmt.Sprintf("%+v", opts))
+		"CacheTypeV", opts.CacheTypeV)
 
 	// Graph size for a partial offload, applies to all GPUs
 	var graphPartialOffload uint64

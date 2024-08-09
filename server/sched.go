@@ -112,6 +112,20 @@ func (s *Scheduler) Run(ctx context.Context) {
 	}()
 }
 
+// selectStr returns the first non-empty value in a list of strings
+// (e.g. selectStr("", "foo", "bar") -> "foo")
+func selectStr(values ...string) string {
+	slog.Debug("selectStr called", "values", values)
+	for _, v := range values {
+		if v != "" {
+			slog.Debug("selectStr returning", "value", v)
+			return v
+		}
+	}
+	slog.Debug("selectStr returning empty string")
+	return ""
+}
+
 func (s *Scheduler) processPending(ctx context.Context) {
 	for {
 		select {
@@ -186,6 +200,13 @@ func (s *Scheduler) processPending(ctx context.Context) {
 						}
 					}
 
+					pending.opts.CacheTypeK = selectStr(pending.opts.CacheTypeK, envconfig.CacheTypeK())
+					pending.opts.CacheTypeV = selectStr(pending.opts.CacheTypeV, envconfig.CacheTypeV())
+
+					slog.Debug("Before calling PredictServerFit in processPending",
+						"CacheTypeK", pending.opts.CacheTypeK,
+						"CacheTypeV", pending.opts.CacheTypeV)
+
 					// Load model for fitting
 					ggml, err := llm.LoadModel(pending.model.ModelPath, 0)
 					if err != nil {
@@ -216,7 +237,12 @@ func (s *Scheduler) processPending(ctx context.Context) {
 						// else we need to expire a runner
 					} else if loadedCount == 0 {
 						// No models loaded. Load the model but prefer the best fit.
-						slog.Debug("loading first model", "model", pending.model.ModelPath)
+						pending.opts.CacheTypeK = selectStr(pending.opts.CacheTypeK, envconfig.CacheTypeK())
+						pending.opts.CacheTypeV = selectStr(pending.opts.CacheTypeV, envconfig.CacheTypeV())
+
+						slog.Debug("Before calling fit functions in processPending",
+							"CacheTypeK", pending.opts.CacheTypeK,
+							"CacheTypeV", pending.opts.CacheTypeV)
 						g := pickBestFullFitByLibrary(pending, ggml, gpus, &numParallel)
 						if g != nil {
 							gpus = g
