@@ -231,6 +231,7 @@ func (s *Scheduler) processPending(ctx context.Context) {
 						// else we need to expire a runner
 					} else if loadedCount == 0 {
 						// No models loaded. Load the model but prefer the best fit.
+						slog.Debug("loading first model", "model", pending.model.ModelPath)
 						g := pickBestFullFitByLibrary(pending, ggml, gpus, &numParallel)
 						if g != nil {
 							gpus = g
