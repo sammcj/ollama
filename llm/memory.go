@@ -13,7 +13,12 @@ import (
 
 // This algorithm looks for a complete fit to determine if we need to unload other models
 func PredictServerFit(allGpus gpu.GpuInfoList, ggml *GGML, adapters, projectors []string, opts api.Options) (bool, uint64) {
-	slog.Debug("Entering PredictServerFit", "CacheTypeK", opts.CacheTypeK, "CacheTypeV", opts.CacheTypeV)
+	slog.Debug("Entering PredictServerFit",
+		"CacheTypeK", opts.CacheTypeK,
+		"CacheTypeV", opts.CacheTypeV,
+		"NumCtx", opts.NumCtx,
+		"NumGPU", opts.NumGPU)
+
 	// Split up the GPUs by type and try them
 	var estimatedVRAM uint64
 	for _, gpus := range allGpus.ByLibrary() {

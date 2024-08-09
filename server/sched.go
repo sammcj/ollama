@@ -24,8 +24,8 @@ import (
 type LlmRequest struct {
 	ctx             context.Context //nolint:containedctx
 	model           *Model
-	opts            api.Options
-	origNumCtx      int // Track the initial ctx request
+	opts            *api.Options // Options for the runner
+	origNumCtx      int          // Track the initial ctx request
 	sessionDuration *api.Duration
 	successCh       chan *runnerRef
 	errCh           chan error
@@ -78,7 +78,7 @@ func InitScheduler(ctx context.Context) *Scheduler {
 }
 
 // context must be canceled to decrement ref count and release the runner
-func (s *Scheduler) GetRunner(c context.Context, model *Model, opts api.Options, sessionDuration *api.Duration) (chan *runnerRef, chan error) {
+func (s *Scheduler) GetRunner(c context.Context, model *Model, opts *api.Options, sessionDuration *api.Duration) (chan *runnerRef, chan error) {
 	if opts.NumCtx < 4 {
 		opts.NumCtx = 4
 	}
@@ -413,7 +413,7 @@ func (s *Scheduler) load(req *LlmRequest, ggml *llm.GGML, gpus gpu.GpuInfoList, 
 	if req.sessionDuration != nil {
 		sessionDuration = req.sessionDuration.Duration
 	}
-	llama, err := s.newServerFn(gpus, req.model.ModelPath, ggml, req.model.AdapterPaths, req.model.ProjectorPaths, req.opts, numParallel)
+	llama, err := s.newServerFn(gpus, req.model.ModelPath, ggml, req.model.AdapterPaths, req.model.ProjectorPaths, *req.opts, numParallel)
 	if err != nil {
 		// some older models are not compatible with newer versions of llama.cpp
 		// show a generalized compatibility error until there is a better way to
@@ -429,7 +429,7 @@ func (s *Scheduler) load(req *LlmRequest, ggml *llm.GGML, gpus gpu.GpuInfoList, 
 		model:           req.model,
 		modelPath:       req.model.ModelPath,
 		llama:           llama,
-		Options:         &req.opts,
+		Options:         req.opts,
 		sessionDuration: sessionDuration,
 		gpus:            gpus,
 		estimatedVRAM:   llama.EstimatedVRAM(),
@@ -706,7 +706,7 @@ func pickBestFullFitByLibrary(req *LlmRequest, ggml *llm.GGML, gpus gpu.GpuInfoL
 			req.opts.NumCtx = req.origNumCtx * p
 			if !envconfig.SchedSpread() {
 				for _, g := range sgl {
-					if ok, estimatedVRAM = llm.PredictServerFit([]gpu.GpuInfo{g}, ggml, req.model.AdapterPaths, req.model.ProjectorPaths, req.opts); ok {
+					if ok, estimatedVRAM = llm.PredictServerFit([]gpu.GpuInfo{g}, ggml, req.model.AdapterPaths, req.model.ProjectorPaths, *req.opts); ok {
 						slog.Info("new model will fit in available VRAM in single GPU, loading", "model", req.model.ModelPath, "gpu", g.ID, "parallel", p, "available", g.FreeMemory, "required", format.HumanBytes2(estimatedVRAM))
 						*numParallel = p
 						return []gpu.GpuInfo{g}
@@ -722,7 +722,7 @@ func pickBestFullFitByLibrary(req *LlmRequest, ggml *llm.GGML, gpus gpu.GpuInfoL
 		// Now try all the GPUs
 		for _, p := range numParallelToTry {
 			req.opts.NumCtx = req.origNumCtx * p
-			if ok, estimatedVRAM = llm.PredictServerFit(sgl, ggml, req.model.AdapterPaths, req.model.ProjectorPaths, req.opts); ok {
+			if ok, estimatedVRAM = llm.PredictServerFit(sgl, ggml, req.model.AdapterPaths, req.model.ProjectorPaths, *req.opts); ok {
 				slog.Info("new model will fit in available VRAM, loading", "model", req.model.ModelPath, "library", sgl[0].Library, "parallel", p, "required", format.HumanBytes2(estimatedVRAM))
 				*numParallel = p
 				return sgl
@@ -742,7 +742,7 @@ func pickBestPartialFitByLibrary(req *LlmRequest, ggml *llm.GGML, gpus gpu.GpuIn
 	var bestEstimate uint64
 	var bestFit int
 	for i, gl := range byLibrary {
-		_, estimatedVRAM := llm.PredictServerFit(gl, ggml, req.model.AdapterPaths, req.model.ProjectorPaths, req.opts)
+		_, estimatedVRAM := llm.PredictServerFit(gl, ggml, req.model.AdapterPaths, req.model.ProjectorPaths, *req.opts)
 		if estimatedVRAM > bestEstimate {
 			bestEstimate = estimatedVRAM
 			bestFit = i
@@ -798,7 +798,7 @@ func (s *Scheduler) unloadAllRunners() {
 // If not, pick a runner to unload, else return nil and the request can be loaded
 func (s *Scheduler) maybeFindCPURunnerToUnload(req *LlmRequest, ggml *llm.GGML, gpus gpu.GpuInfoList) *runnerRef {
 	slog.Debug("evaluating if CPU model load will fit in available system memory")
-	estimate := llm.EstimateGPULayers(gpus, ggml, req.model.ProjectorPaths, &req.opts)
+	estimate := llm.EstimateGPULayers(gpus, ggml, req.model.ProjectorPaths, req.opts)
 	if estimate.TotalSize <= gpus[0].FreeMemory {
 		slog.Debug("cpu inference mode, model fits in available system memory", "model", format.HumanBytes2(estimate.TotalSize), "available", format.HumanBytes2(gpus[0].FreeMemory))
 		return nil
