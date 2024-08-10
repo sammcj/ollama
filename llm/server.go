@@ -61,12 +61,6 @@ type llmServer struct {
 	sem *semaphore.Weighted
 }
 
-// K/V cache quantization types supported by llama.cpp server
-var validKVCacheTypes = map[string]bool{
-	"f16": true, "f32": true, "q8_0": true, "q4_0": true,
-	"q4_1": true, "q5_0": true, "q5_1": true, "iq4_nl": true,
-}
-
 // selectStr returns the first non-empty value in a list of strings
 // (e.g. selectStr("", "foo", "bar") -> "foo")
 func selectStr(values ...string) string {
@@ -100,20 +94,32 @@ func LoadModel(model string, maxArraySize int) (*GGML, error) {
 
 // setCacheTypeParams sets the K/V cache type parameters if specified
 func setCacheTypeParams(params *[]string, opts *api.Options, flashAttnEnabled bool) {
+	// K/V cache quantization types supported by llama.cpp server
+	var validKVCacheTypes = map[string]bool{
+		"f16": true, "f32": true, "q8_0": true, "q4_0": true,
+		"q4_1": true, "q5_0": true, "q5_1": true, "iq4_nl": true,
+	}
+
 	setCacheTypeParam := func(paramName, cacheType string) {
 		if !validKVCacheTypes[cacheType] {
 			if cacheType != "" {
-				slog.Warn("invalid cache type", "param", paramName, "type", cacheType)
+					slog.Warn("invalid cache type", "param", paramName, "type", cacheType)
 			}
 			return
 		}
 
-		if cacheType == "f16" || cacheType == "f32" || flashAttnEnabled {
+		if cacheType == "f16" || cacheType == "f32" {
+			*params = append(*params, paramName, cacheType)
+			slog.Debug("Setting cache type param", "param", paramName, "type", cacheType)
+		} else if flashAttnEnabled {
 			*params = append(*params, paramName, cacheType)
 			slog.Debug("Setting cache type param", "param", paramName, "type", cacheType)
 		} else {
 			slog.Warn("cache type not set: requires flash attention to be enabled",
-				"param", paramName, "type", cacheType)
+				"param", paramName, "type", cacheType, "flash_attention", flashAttnEnabled)
+			// Fallback to default f16
+			*params = append(*params, paramName, "f16")
+			slog.Debug("Falling back to default cache type", "param", paramName, "type", "f16")
 		}
 	}
 
