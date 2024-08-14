@@ -617,33 +617,10 @@ func (runner *runnerRef) needsReload(ctx context.Context, req *LlmRequest) bool 
 	// Normalize the NumCtx for parallelism
 	optsExisting.NumCtx = optsExisting.NumCtx / runner.numParallel
 
-	slog.Debug("comparing cache types",
-		"existing_k", runner.Options.Runner.CacheTypeK,
-		"new_k", req.opts.Runner.CacheTypeK,
-		"existing_v", runner.Options.Runner.CacheTypeV,
-		"new_v", req.opts.Runner.CacheTypeV)
-
 	// Compare cache types
 	if runner.Options.Runner.CacheTypeK != req.opts.Runner.CacheTypeK ||
 		runner.Options.Runner.CacheTypeV != req.opts.Runner.CacheTypeV {
 		slog.Debug("cache types differ, reload needed")
-		return true
-	}
-
-	if !reflect.DeepEqual(runner.model.AdapterPaths, req.model.AdapterPaths) {
-		slog.Debug("adapter paths differ, reload needed")
-		return true
-	}
-	if !reflect.DeepEqual(runner.model.ProjectorPaths, req.model.ProjectorPaths) {
-		slog.Debug("projector paths differ, reload needed")
-		return true
-	}
-	if !reflect.DeepEqual(optsExisting, optsNew) {
-		slog.Debug("runner options differ, reload needed")
-		return true
-	}
-	if runner.llama.Ping(ctx) != nil {
-		slog.Debug("llama server ping failed, reload needed")
 		return true
 	}
 
