@@ -83,8 +83,12 @@ func (s *Scheduler) GetRunner(c context.Context, model *Model, opts *api.Options
 		opts.NumCtx = 4
 	}
 
-	opts.CacheTypeK = selectStr(opts.CacheTypeK, envconfig.CacheTypeK())
-	opts.CacheTypeV = selectStr(opts.CacheTypeV, envconfig.CacheTypeV())
+	if opts.Runner.CacheTypeK == "" {
+		opts.Runner.CacheTypeK = envconfig.CacheTypeK()
+	}
+	if opts.Runner.CacheTypeV == "" {
+		opts.Runner.CacheTypeV = envconfig.CacheTypeV()
+	}
 
 	req := &LlmRequest{
 		ctx:             c,
@@ -614,13 +618,14 @@ func (runner *runnerRef) needsReload(ctx context.Context, req *LlmRequest) bool 
 	optsExisting.NumCtx = optsExisting.NumCtx / runner.numParallel
 
 	slog.Debug("comparing cache types",
-	"existing_k", runner.Options.CacheTypeK,
-	"new_k", req.opts.CacheTypeK,
-	"existing_v", runner.Options.CacheTypeV,
-	"new_v", req.opts.CacheTypeV)
+		"existing_k", runner.Options.Runner.CacheTypeK,
+		"new_k", req.opts.Runner.CacheTypeK,
+		"existing_v", runner.Options.Runner.CacheTypeV,
+		"new_v", req.opts.Runner.CacheTypeV)
 
 	// Compare cache types
-	if runner.Options.CacheTypeK != req.opts.CacheTypeK || runner.Options.CacheTypeV != req.opts.CacheTypeV {
+	if runner.Options.Runner.CacheTypeK != req.opts.Runner.CacheTypeK ||
+		runner.Options.Runner.CacheTypeV != req.opts.Runner.CacheTypeV {
 		slog.Debug("cache types differ, reload needed")
 		return true
 	}

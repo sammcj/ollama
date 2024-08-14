@@ -1106,6 +1106,17 @@ func generate(cmd *cobra.Command, opts runOptions) error {
 		fmt.Println()
 	}
 
+	// Ensure CacheTypeK and CacheTypeV are set in the request options
+	if opts.Options == nil {
+		opts.Options = make(map[string]interface{})
+	}
+	if _, ok := opts.Options["cache_type_k"]; !ok {
+		opts.Options["cache_type_k"] = envconfig.CacheTypeK()
+	}
+	if _, ok := opts.Options["cache_type_v"]; !ok {
+		opts.Options["cache_type_v"] = envconfig.CacheTypeV()
+	}
+
 	if !latest.Done {
 		return nil
 	}
