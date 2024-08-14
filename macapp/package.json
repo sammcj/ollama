@@ -1,7 +1,7 @@
 {
   "name": "ollama",
   "productName": "Ollama",
-  "version": "0.0.0",
+  "version": "4d0c4ce4",
   "description": "ollama",
   "main": ".webpack/main",
   "scripts": {

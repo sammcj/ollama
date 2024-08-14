@@ -607,8 +607,15 @@ func (runner *runnerRef) needsReload(ctx context.Context, req *LlmRequest) bool 
 	// Normalize the NumCtx for parallelism
 	optsExisting.NumCtx = optsExisting.NumCtx / runner.numParallel
 
+	slog.Debug("comparing cache types",
+	"existing_k", runner.Options.CacheTypeK,
+	"new_k", req.opts.CacheTypeK,
+	"existing_v", runner.Options.CacheTypeV,
+	"new_v", req.opts.CacheTypeV)
+
 	// Compare cache types
 	if runner.Options.CacheTypeK != req.opts.CacheTypeK || runner.Options.CacheTypeV != req.opts.CacheTypeV {
+		slog.Debug("cache types differ, reload needed")
 		return true
 	}
 

@@ -1,4 +1,6 @@
 #!/bin/bash
+export LDFLAGS="-w"
+export BLAS_INCLUDE_DIRS=/opt/homebrew/Cellar/clblast,/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/vecLib.framework,/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/Accelerate.framework,/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/Foundation.framework,/opt/homebrew/Cellar/openblas
 # This script is intended to run inside the go generate
 # working directory must be ./llm/generate/
 

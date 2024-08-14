@@ -608,7 +608,7 @@ func DefaultOptions() Options {
 		Runner: Runner{
 			// options set when the model is loaded
 			NumCtx:    2048,
-			NumBatch:  512,
+			NumBatch:  1024,
 			NumGPU:    -1, // -1 here indicates that NumGPU should be set dynamically
 			NumThread: 0,  // let the runtime decide
 			LowVRAM:   false,
