@@ -127,3 +127,86 @@ func TestEstimateGPULayers(t *testing.T) {
 		})
 	}
 }
+
+func TestEstimateKvCacheSize(t *testing.T) {
+	tests := []struct {
+		name               string
+		cacheType          string
+		numCtx             uint64
+		blockCount         uint64
+		embeddingHeadCount uint64
+		headCountKV        uint64
+		expected           uint64
+	}{
+		{
+			name:               "f32 cache type",
+			cacheType:          "f32",
+			numCtx:             1024,
+			blockCount:         32,
+			embeddingHeadCount: 32,
+			headCountKV:        32,
+			expected:           134217728, // 128 MB
+		},
+		{
+			name:               "f16 cache type",
+			cacheType:          "f16",
+			numCtx:             1024,
+			blockCount:         32,
+			embeddingHeadCount: 32,
+			headCountKV:        32,
+			expected:           67108864, // 64 MB
+		},
+		{
+			name:               "q4_0 cache type",
+			cacheType:          "q4_0",
+			numCtx:             1024,
+			blockCount:         32,
+			embeddingHeadCount: 32,
+			headCountKV:        32,
+			expected:           16777216, // 16 MB
+		},
+		{
+			name:               "q8_0 cache type",
+			cacheType:          "q8_0",
+			numCtx:             1024,
+			blockCount:         32,
+			embeddingHeadCount: 32,
+			headCountKV:        32,
+			expected:           33554432, // 32 MB
+		},
+		{
+			name:               "unknown cache type",
+			cacheType:          "unknown",
+			numCtx:             1024,
+			blockCount:         32,
+			embeddingHeadCount: 32,
+			headCountKV:        32,
+			expected:           67108864, // 64 MB (defaults to f16)
+		},
+		{
+			name:               "empty cache type",
+			cacheType:          "",
+			numCtx:             1024,
+			blockCount:         32,
+			embeddingHeadCount: 32,
+			headCountKV:        32,
+			expected:           67108864, // 64 MB (defaults to f16)
+		},
+		{
+			name:               "rounding test",
+			cacheType:          "f32",
+			numCtx:             1000,
+			blockCount:         32,
+			embeddingHeadCount: 32,
+			headCountKV:        32,
+			expected:           131072000, // Rounded up to nearest multiple of 64
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := estimateKvCacheSize(tt.cacheType, tt.numCtx, tt.blockCount, tt.embeddingHeadCount, tt.headCountKV)
+			assert.Equal(t, tt.expected, result, "Estimated KV cache size does not match expected value")
+		})
+	}
+}

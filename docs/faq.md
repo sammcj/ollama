@@ -288,8 +288,9 @@ You can set the quantization type in a number of ways:
 2. In a model's Modelfile using the `cache_type_k` and `cache_type_v` parameters which will be loaded with the model.
 3. In the CLI with `/set parameter cache_type_k <value>` and `/set parameter cache_type_v <value>` which will be used for that session.
 
-While there are [a number of quantization types available](https://github.com/ggerganov/llama.cpp/pull/7527), the most common you might want to choose are:
+While there are [a number of quantization types available](https://github.com/ggerganov/llama.cpp/pull/7527), Ollama currently supports:
 
+- `f32` - full precision and memory usage.
 - `f16` - high precision and memory usage (default).
 - `q8_0` - 8-bit quantization, uses approximately 1/2 the memory of `f16` with a very small loss in precision.
 - `q4_0` - 4-bit quantization, uses approximately 1/4 the memory of `f16` with a small-medium loss in precision.

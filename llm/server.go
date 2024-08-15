@@ -97,7 +97,6 @@ func setCacheTypeParams(params *[]string, opts *api.Options, flashAttnEnabled bo
 	// K/V cache quantization types supported by llama.cpp server
 	validKVCacheTypes := map[string]bool{
 		"f16": true, "f32": true, "q8_0": true, "q4_0": true,
-		"q4_1": true, "q5_0": true, "q5_1": true, "iq4_nl": true,
 	}
 
 	setCacheTypeParam := func(paramName, cacheType string) {
