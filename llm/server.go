@@ -61,17 +61,6 @@ type llmServer struct {
 	sem *semaphore.Weighted
 }
 
-// selectStr returns the first non-empty value in a list of strings
-// (e.g. selectStr("", "foo", "bar") -> "foo")
-func selectStr(values ...string) string {
-	for _, v := range values {
-		if v != "" {
-			return v
-		}
-	}
-	return ""
-}
-
 // LoadModel will load a model from disk. The model must be in the GGML format.
 //
 // It collects array values for arrays with a size less than or equal to
@@ -93,7 +82,7 @@ func LoadModel(model string, maxArraySize int) (*GGML, error) {
 }
 
 // setCacheTypeParams sets the K/V cache type parameters if specified
-func setCacheTypeParams(params *[]string, opts *api.Options, flashAttnEnabled bool) {
+func setCacheTypeParams(params *[]string, opts api.Options, flashAttnEnabled bool) {
 	// K/V cache quantization types supported by llama.cpp server
 	validKVCacheTypes := map[string]bool{
 		"f16": true, "f32": true, "q8_0": true, "q4_0": true,
@@ -123,8 +112,8 @@ func setCacheTypeParams(params *[]string, opts *api.Options, flashAttnEnabled bo
 	}
 
 	// Determine cache types, prioritizing parameter options and set cache type parameters
-	setCacheTypeParam("--cache-type-k", selectStr(opts.CacheTypeK, envconfig.CacheTypeK()))
-	setCacheTypeParam("--cache-type-v", selectStr(opts.CacheTypeV, envconfig.CacheTypeV()))
+	setCacheTypeParam("--cache-type-k", envconfig.CacheTypeK())
+	setCacheTypeParam("--cache-type-v", envconfig.CacheTypeV())
 }
 
 // NewLlamaServer will run a server for the given GPUs
@@ -153,9 +142,9 @@ func NewLlamaServer(gpus gpu.GpuInfoList, model string, ggml *GGML, adapters, pr
 	}
 	if len(gpus) == 1 && gpus[0].Library == "cpu" {
 		cpuRunner = serverForCpu()
-		estimate = EstimateGPULayers(gpus, ggml, projectors, &opts)
+		estimate = EstimateGPULayers(gpus, ggml, projectors, opts)
 	} else {
-		estimate = EstimateGPULayers(gpus, ggml, projectors, &opts)
+		estimate = EstimateGPULayers(gpus, ggml, projectors, opts)
 
 		switch {
 		case gpus[0].Library == "metal" && estimate.VRAMSize > systemTotalMemory:
@@ -286,7 +275,7 @@ func NewLlamaServer(gpus gpu.GpuInfoList, model string, ggml *GGML, adapters, pr
 		params = append(params, "--flash-attn")
 	}
 
-	setCacheTypeParams(&params, &opts, flashAttnEnabled)
+	setCacheTypeParams(&params, opts, flashAttnEnabled)
 
 	// Windows CUDA should not use mmap for best performance
 	// Linux  with a model larger than free space, mmap leads to thrashing
@@ -791,8 +780,6 @@ func (s *llmServer) Completion(ctx context.Context, req CompletionRequest, fn fu
 		"penalize_nl":       req.Options.PenalizeNewline,
 		"seed":              req.Options.Seed,
 		"stop":              req.Options.Stop,
-		"cache_type_k":      req.Options.CacheTypeK,
-		"cache_type_v":      req.Options.CacheTypeV,
 		"image_data":        req.Images,
 		"cache_prompt":      true,
 	}

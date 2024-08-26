@@ -38,11 +38,10 @@ func TestLoad(t *testing.T) {
 	defer done()
 	s := InitScheduler(ctx)
 	var ggml *llm.GGML // value not used in tests
-	defaultOpts := api.DefaultOptions()
 	req := &LlmRequest{
 		ctx:             ctx,
 		model:           &Model{ModelPath: "foo"},
-		opts:            &defaultOpts,
+		opts:            api.DefaultOptions(),
 		successCh:       make(chan *runnerRef, 1),
 		errCh:           make(chan error, 1),
 		sessionDuration: &api.Duration{Duration: 2 * time.Second},
@@ -140,11 +139,10 @@ func newScenarioRequest(t *testing.T, ctx context.Context, modelName string, est
 	if duration == nil {
 		duration = &api.Duration{Duration: 5 * time.Millisecond}
 	}
-	defaultOpts := api.DefaultOptions()
 	b.req = &LlmRequest{
 		ctx:             b.ctx,
 		model:           model,
-		opts:            &defaultOpts,
+		opts:            api.DefaultOptions(),
 		sessionDuration: duration,
 		successCh:       make(chan *runnerRef, 1),
 		errCh:           make(chan error, 1),
@@ -458,10 +456,9 @@ func TestPrematureExpired(t *testing.T) {
 
 func TestUseLoadedRunner(t *testing.T) {
 	ctx, done := context.WithTimeout(context.Background(), 100*time.Millisecond)
-	defaultOpts := api.DefaultOptions()
 	req := &LlmRequest{
 		ctx:             ctx,
-		opts:            &defaultOpts,
+		opts:            api.DefaultOptions(),
 		successCh:       make(chan *runnerRef, 1),
 		sessionDuration: &api.Duration{Duration: 2},
 	}
@@ -586,13 +583,12 @@ func TestNeedsReload(t *testing.T) {
 		llama:       llm,
 		numParallel: 1,
 	}
-	defaultOpts := api.DefaultOptions()
 	req := &LlmRequest{
 		model: &Model{
 			AdapterPaths:   []string{"adapter2"},
 			ProjectorPaths: []string{"projector2"},
 		},
-		opts: &defaultOpts,
+		opts: api.DefaultOptions(),
 	}
 	resp := runner.needsReload(ctx, req)
 	require.True(t, resp)

@@ -1125,17 +1125,6 @@ func generate(cmd *cobra.Command, opts runOptions) error {
 		fmt.Println()
 	}
 
-	// Ensure CacheTypeK and CacheTypeV are set in the request options
-	if opts.Options == nil {
-		opts.Options = make(map[string]interface{})
-	}
-	if _, ok := opts.Options["cache_type_k"]; !ok {
-		opts.Options["cache_type_k"] = envconfig.CacheTypeK()
-	}
-	if _, ok := opts.Options["cache_type_v"]; !ok {
-		opts.Options["cache_type_v"] = envconfig.CacheTypeV()
-	}
-
 	if !latest.Done {
 		return nil
 	}
@@ -1428,8 +1417,6 @@ func NewCLI() *cobra.Command {
 				envVars["OLLAMA_SCHED_SPREAD"],
 				envVars["OLLAMA_TMPDIR"],
 				envVars["OLLAMA_FLASH_ATTENTION"],
-				envVars["OLLAMA_CACHE_TYPE_K"],
-				envVars["OLLAMA_CACHE_TYPE_V"],
 				envVars["OLLAMA_LLM_LIBRARY"],
 			})
 		default:

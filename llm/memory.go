@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/ollama/ollama/api"
+	"github.com/ollama/ollama/envconfig"
 	"github.com/ollama/ollama/format"
 	"github.com/ollama/ollama/gpu"
 )
@@ -17,7 +18,7 @@ func PredictServerFit(allGpus gpu.GpuInfoList, ggml *GGML, adapters, projectors 
 	var estimatedVRAM uint64
 	for _, gpus := range allGpus.ByLibrary() {
 		var layerCount int
-		estimate := EstimateGPULayers(gpus, ggml, projectors, &opts)
+		estimate := EstimateGPULayers(gpus, ggml, projectors, opts)
 		layerCount, estimatedVRAM = estimate.Layers, estimate.VRAMSize
 		if opts.NumGPU < 0 {
 			if layerCount > 0 && layerCount >= int(ggml.KV().BlockCount()+1) {
@@ -66,7 +67,7 @@ type MemoryEstimate struct {
 
 // Given a model and one or more GPU targets, predict how many layers and bytes we can load, and the total size
 // The GPUs provided must all be the same Library
-func EstimateGPULayers(gpus []gpu.GpuInfo, ggml *GGML, projectors []string, opts *api.Options) MemoryEstimate {
+func EstimateGPULayers(gpus []gpu.GpuInfo, ggml *GGML, projectors []string, opts api.Options) MemoryEstimate {
 	// Graph size for a partial offload, applies to all GPUs
 	var graphPartialOffload uint64
 
@@ -115,9 +116,9 @@ func EstimateGPULayers(gpus []gpu.GpuInfo, ggml *GGML, projectors []string, opts
 		slog.Warn("model missing blk.0 layer size")
 	}
 
-	// Estimate the memory required for K and V caches separately
-	kSize := estimateKvCacheSize(opts.CacheTypeK, uint64(opts.NumCtx), ggml.KV().BlockCount(), ggml.KV().EmbeddingHeadCountK(), ggml.KV().HeadCountKV())
-	vSize := estimateKvCacheSize(opts.CacheTypeV, uint64(opts.NumCtx), ggml.KV().BlockCount(), ggml.KV().EmbeddingHeadCountV(), ggml.KV().HeadCountKV())
+	// Estimate the memory required for K and V caches separately as they can have different quantization types
+	kSize := estimateKvCacheSize(envconfig.CacheTypeK(), uint64(opts.NumCtx), ggml.KV().BlockCount(), ggml.KV().EmbeddingHeadCountK(), ggml.KV().HeadCountKV())
+	vSize := estimateKvCacheSize(envconfig.CacheTypeV(), uint64(opts.NumCtx), ggml.KV().BlockCount(), ggml.KV().EmbeddingHeadCountV(), ggml.KV().HeadCountKV())
 	kv := kSize + vSize
 
 	// KV is proportional to the number of layers
@@ -307,30 +308,6 @@ func EstimateGPULayers(gpus []gpu.GpuInfo, ggml *GGML, projectors []string, opts
 	return estimate
 }
 
-// estimateKvCacheSize determines the memory required for K or V cache based on the quantization type
-func estimateKvCacheSize(cacheType string, numCtx, blockCount, embeddingHeadCount, headCountKV uint64) uint64 {
-	var bytesPerElement float64
-
-	switch cacheType {
-	case "f32", "fp32":
-		bytesPerElement = 4 // fp32
-	case "", "f16", "fp16":
-		bytesPerElement = 2 // fp16
-	case "q4_0":
-		bytesPerElement = 0.5 // 1/4 of fp16
-	case "q8_0":
-		bytesPerElement = 1 // 1/2 of fp16
-	default:
-		// Default to fp16 if unknown
-		bytesPerElement = 2
-		slog.Warn("Unknown cache type, defaulting to fp16", "type", cacheType)
-	}
-
-	estimate := uint64(float64(numCtx*blockCount*embeddingHeadCount*headCountKV) * bytesPerElement)
-	// round up to the nearest multiple of 64 bytes
-	return ((estimate + 63) / 64) * 64
-}
-
 func (m MemoryEstimate) log() {
 	slog.Info(
 		"offload to "+m.inferenceLibrary,
@@ -378,4 +355,28 @@ func (m MemoryEstimate) log() {
 			),
 		),
 	)
+}
+
+// estimateKvCacheSize determines the memory required for K or V cache based on the quantization type
+func estimateKvCacheSize(cacheType string, numCtx, blockCount, embeddingHeadCount, headCountKV uint64) uint64 {
+	var bytesPerElement float64
+
+	switch cacheType {
+	case "f32", "fp32":
+		bytesPerElement = 4 // fp32
+	case "", "f16", "fp16":
+		bytesPerElement = 2 // fp16
+	case "q4_0":
+		bytesPerElement = 0.5 // 1/4 of fp16
+	case "q8_0":
+		bytesPerElement = 1 // 1/2 of fp16
+	default:
+		// Default to fp16 if unknown
+		bytesPerElement = 2
+		slog.Warn("Unknown cache type, defaulting to fp16", "type", cacheType)
+	}
+
+	estimate := uint64(float64(numCtx*blockCount*embeddingHeadCount*headCountKV) * bytesPerElement)
+	// round up to the nearest multiple of 64 bytes
+	return ((estimate + 63) / 64) * 64
 }
