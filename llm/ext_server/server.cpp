@@ -2800,6 +2800,7 @@ int main(int argc, char **argv) {
     llama_backend_init();
     llama_numa_init(params.numa);
 
+    LOG_INFO("starting c++ runner", {});
     LOG_INFO("build info", {{"build", LLAMA_BUILD_NUMBER},
                             {"commit", LLAMA_COMMIT}});
 
