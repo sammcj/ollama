@@ -98,10 +98,10 @@ func (s *Server) scheduleRunner(ctx context.Context, name string, caps []Capabil
 	}
 
 	if cacheTypeK, ok := requestOpts["cache_type_k"].(string); ok && cacheTypeK != "" {
-			opts.Runner.CacheTypeK = cacheTypeK
+		opts.Runner.CacheTypeK = cacheTypeK
 	}
 	if cacheTypeV, ok := requestOpts["cache_type_v"].(string); ok && cacheTypeV != "" {
-			opts.Runner.CacheTypeV = cacheTypeV
+		opts.Runner.CacheTypeV = cacheTypeV
 	}
 
 	runnerCh, errCh := s.sched.GetRunner(ctx, model, opts, keepAlive)
@@ -127,17 +127,17 @@ func (s *Server) GenerateHandler(c *gin.Context) {
 	}
 
 	if req.Options == nil {
-			req.Options = make(map[string]interface{})
+		req.Options = make(map[string]interface{})
 	}
 
 	// Add cache type options
 	cacheTypeK := envconfig.CacheTypeK()
 	cacheTypeV := envconfig.CacheTypeV()
 	if cacheTypeK != "" {
-			req.Options["cache_type_k"] = cacheTypeK
+		req.Options["cache_type_k"] = cacheTypeK
 	}
 	if cacheTypeV != "" {
-			req.Options["cache_type_v"] = cacheTypeV
+		req.Options["cache_type_v"] = cacheTypeV
 	}
 
 	// expire the runner
