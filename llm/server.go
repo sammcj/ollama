@@ -191,6 +191,8 @@ func NewLlamaServer(gpus gpu.GpuInfoList, model string, ggml *GGML, adapters, pr
 		"--ctx-size", strconv.Itoa(opts.NumCtx),
 		"--batch-size", strconv.Itoa(opts.NumBatch),
 		"--embedding",
+		"--cache-type-k", envconfig.CacheTypeK(),
+		"--cache-type-v", envconfig.CacheTypeV(),
 	}
 
 	params = append(params, "--log-disable")
