@@ -420,15 +420,7 @@ func (s *Scheduler) load(req *LlmRequest, ggml *llm.GGML, gpus gpu.GpuInfoList, 
 	if req.sessionDuration != nil {
 		sessionDuration = req.sessionDuration.Duration
 	}
-	opts := req.opts
-	if opts.Runner.CacheTypeK != "" {
-		req.model.CacheTypeK = opts.Runner.CacheTypeK
-	}
-	if opts.Runner.CacheTypeV != "" {
-		req.model.CacheTypeV = opts.Runner.CacheTypeV
-	}
-
-	llama, err := s.newServerFn(gpus, req.model.ModelPath, ggml, req.model.AdapterPaths, req.model.ProjectorPaths, opts, numParallel)
+	llama, err := s.newServerFn(gpus, req.model.ModelPath, ggml, req.model.AdapterPaths, req.model.ProjectorPaths, req.opts, numParallel)
 	if err != nil {
 		// some older models are not compatible with newer versions of llama.cpp
 		// show a generalized compatibility error until there is a better way to
