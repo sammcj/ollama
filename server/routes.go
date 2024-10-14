@@ -97,6 +97,13 @@ func (s *Server) scheduleRunner(ctx context.Context, name string, caps []Capabil
 		return nil, nil, nil, err
 	}
 
+	if cacheTypeK, ok := requestOpts["cache_type_k"].(string); ok && cacheTypeK != "" {
+			opts.Runner.CacheTypeK = cacheTypeK
+	}
+	if cacheTypeV, ok := requestOpts["cache_type_v"].(string); ok && cacheTypeV != "" {
+			opts.Runner.CacheTypeV = cacheTypeV
+	}
+
 	runnerCh, errCh := s.sched.GetRunner(ctx, model, opts, keepAlive)
 	var runner *runnerRef
 	select {
@@ -117,6 +124,20 @@ func (s *Server) GenerateHandler(c *gin.Context) {
 	} else if err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
+	}
+
+	if req.Options == nil {
+			req.Options = make(map[string]interface{})
+	}
+
+	// Add cache type options
+	cacheTypeK := envconfig.CacheTypeK()
+	cacheTypeV := envconfig.CacheTypeV()
+	if cacheTypeK != "" {
+			req.Options["cache_type_k"] = cacheTypeK
+	}
+	if cacheTypeV != "" {
+			req.Options["cache_type_v"] = cacheTypeV
 	}
 
 	// expire the runner
