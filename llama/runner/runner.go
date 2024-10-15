@@ -232,6 +232,8 @@ type Server struct {
 
 	// KV cache
 	cache *InputCache
+	cacheTypeK string
+	cacheTypeV string
 
 	// does this model require a beginning of sequence token?
 	bosToken int
@@ -798,6 +800,8 @@ func main() {
 	multiUserCache := flag.Bool("multiuser-cache", false, "optimize input cache algorithm for multiple users")
 	// Expose requirements as a JSON output to stdout
 	requirements := flag.Bool("requirements", false, "print json requirement information")
+	cacheTypeK := flag.String("cache-type-k", "f16", "context k/v cache quantisation Key type (f32, f16, q4_0, q8_0)")
+	cacheTypeV := flag.String("cache-type-v", "f16", "context k/v cache quantisation Value type (f32, f16, q4_0, q8_0)")
 
 	// These are either ignored by llama.cpp or have no significance to us
 	_ = flag.Bool("embedding", false, "enable embedding vector output (default: disabled)")
@@ -833,6 +837,8 @@ func main() {
 		parallel:  *parallel,
 		seqs:      make([]*Sequence, *parallel),
 		status:    ServerStatusLoadingModel,
+		cacheTypeK: *cacheTypeK,
+		cacheTypeV: *cacheTypeV,
 	}
 
 	var tensorSplitFloats []float32
