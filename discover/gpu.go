@@ -1,6 +1,6 @@
 //go:build linux || windows
 
-package gpu
+package discover
 
 /*
 #cgo linux LDFLAGS: -lrt -lpthread -ldl -lstdc++ -lm
@@ -229,7 +229,10 @@ func GetGPUInfo() GpuInfoList {
 			slog.Warn("error looking up system memory", "error", err)
 		}
 		depPath := LibraryDir()
-
+		details, err := GetCPUDetails()
+		if err != nil {
+			slog.Warn("failed to lookup CPU details", "error", err)
+		}
 		cpus = []CPUInfo{
 			{
 				GpuInfo: GpuInfo{
@@ -239,6 +242,7 @@ func GetGPUInfo() GpuInfoList {
 					ID:             "0",
 					DependencyPath: depPath,
 				},
+				CPUs: details,
 			},
 		}
 
