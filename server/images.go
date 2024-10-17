@@ -72,6 +72,8 @@ type Model struct {
 	Digest         string
 	Options        map[string]interface{}
 	Messages       []api.Message
+	CacheTypeK     string
+	CacheTypeV     string
 
 	Template *template.Template
 }
@@ -245,6 +247,9 @@ func GetModel(name string) (*Model, error) {
 		Digest:    digest,
 		Template:  template.DefaultTemplate,
 	}
+
+	model.CacheTypeK = envconfig.CacheTypeK()
+	model.CacheTypeV = envconfig.CacheTypeV()
 
 	if manifest.Config.Digest != "" {
 		filename, err := GetBlobsPath(manifest.Config.Digest)

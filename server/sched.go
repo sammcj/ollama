@@ -46,6 +46,8 @@ type Scheduler struct {
 	getGpuFn     func() discover.GpuInfoList
 	getCpuFn     func() discover.GpuInfoList
 	reschedDelay time.Duration
+
+	estimateKvCacheSize func(cacheType string, numCtx, blockCount, embeddingHeadCount, headCountKV uint64, isEmbeddingModel bool) uint64
 }
 
 // Default automatic value for number of models we allow per GPU
@@ -74,6 +76,7 @@ func InitScheduler(ctx context.Context) *Scheduler {
 		reschedDelay:  250 * time.Millisecond,
 	}
 	sched.loadFn = sched.load
+	sched.estimateKvCacheSize = estimateKvCacheSize
 	return sched
 }
 
@@ -833,4 +836,32 @@ func (s *Scheduler) maybeFindCPURunnerToUnload(req *LlmRequest, ggml *llm.GGML, 
 	// TODO - optimization: try to find CPU only runners first, or partial offloads with enough in system memory to make room
 
 	return s.findRunnerToUnload()
+}
+
+// estimateKvCacheSize determines the memory required for K or V cache based on the quantization type
+func estimateKvCacheSize(cacheType string, numCtx, blockCount, embeddingHeadCount, headCountKV uint64, isEmbeddingModel bool) uint64 {
+	var bytesPerElement float64
+
+	if isEmbeddingModel && cacheType != "f16" && cacheType != "f32" {
+		cacheType = "f16" // Default to f16 for embedding models if an unsupported type is specified
+	}
+
+	switch cacheType {
+	case "f32", "fp32":
+		bytesPerElement = 4 // fp32
+	case "", "f16", "fp16":
+		bytesPerElement = 2 // fp16
+	case "q4_0":
+		bytesPerElement = 0.5 // 1/4 of fp16
+	case "q8_0":
+		bytesPerElement = 1 // 1/2 of fp16
+	default:
+		// Default to fp16 if unknown
+		bytesPerElement = 2
+		slog.Warn("Unknown cache type, defaulting to fp16", "type", cacheType)
+	}
+
+	estimate := uint64(float64(numCtx*blockCount*embeddingHeadCount*headCountKV) * bytesPerElement)
+	// round up to the nearest multiple of 64 bytes
+	return ((estimate + 63) / 64) * 64
 }
