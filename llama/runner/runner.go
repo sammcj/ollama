@@ -231,7 +231,7 @@ type Server struct {
 	seqs []*Sequence
 
 	// KV cache
-	cache *InputCache
+	cache      *InputCache
 	cacheTypeK string
 	cacheTypeV string
 
@@ -757,7 +757,7 @@ func (s *Server) loadModel(
 
 	s.model = llama.LoadModelFromFile(mpath, params)
 
-	ctxParams := llama.NewContextParams(kvSize, s.batchSize*s.parallel, s.parallel, threads, flashAttention)
+	ctxParams := llama.NewContextParams(kvSize, s.batchSize*s.parallel, s.parallel, threads, flashAttention, s.cacheTypeK, s.cacheTypeV)
 	s.lc = llama.NewContextWithModel(s.model, ctxParams)
 
 	if lpath != "" {
@@ -833,10 +833,10 @@ func main() {
 	slog.Debug("system info", "cpu", llama.PrintSystemInfo(), "threads", *threads)
 
 	server := &Server{
-		batchSize: *batchSize,
-		parallel:  *parallel,
-		seqs:      make([]*Sequence, *parallel),
-		status:    ServerStatusLoadingModel,
+		batchSize:  *batchSize,
+		parallel:   *parallel,
+		seqs:       make([]*Sequence, *parallel),
+		status:     ServerStatusLoadingModel,
 		cacheTypeK: *cacheTypeK,
 		cacheTypeV: *cacheTypeV,
 	}
