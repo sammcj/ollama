@@ -41,6 +41,7 @@ package llama
 #include "clip.h"
 #include "llava.h"
 #include "sampling_ext.h"
+#include "ggml.h"
 
 bool llamaProgressCallback(float progress, void *user_data);
 */
@@ -70,7 +71,30 @@ type ContextParams struct {
 	c C.struct_llama_context_params
 }
 
-func NewContextParams(numCtx int, batchSize int, numSeqMax int, threads int, flashAttention bool) ContextParams {
+func kvCacheTypeFromString(s string) (C.enum_ggml_type, error) {
+	switch s {
+	case "f32":
+		return C.GGML_TYPE_F32, nil
+	case "f16":
+		return C.GGML_TYPE_F16, nil
+	case "q8_0":
+		return C.GGML_TYPE_Q8_0, nil
+	case "q4_0":
+		return C.GGML_TYPE_Q4_0, nil
+	case "q4_1":
+		return C.GGML_TYPE_Q4_1, nil
+	case "iq4_nl":
+		return C.GGML_TYPE_IQ4_NL, nil
+	case "q5_0":
+		return C.GGML_TYPE_Q5_0, nil
+	case "q5_1":
+		return C.GGML_TYPE_Q5_1, nil
+	default:
+		return C.GGML_TYPE_COUNT, errors.New("invalid cache type: " + s)
+	}
+}
+
+func NewContextParams(numCtx int, batchSize int, numSeqMax int, threads int, flashAttention bool, cacheTypeK string, cacheTypeV string) ContextParams {
 	params := C.llama_context_default_params()
 	params.n_ctx = C.uint(numCtx)
 	params.n_batch = C.uint(batchSize)
@@ -79,6 +103,14 @@ func NewContextParams(numCtx int, batchSize int, numSeqMax int, threads int, fla
 	params.n_threads_batch = params.n_threads
 	params.embeddings = C.bool(true)
 	params.flash_attn = C.bool(flashAttention)
+	typeK, err := kvCacheTypeFromString(cacheTypeK)
+	if err == nil {
+		params.type_k = typeK
+	}
+	typeV, err := kvCacheTypeFromString(cacheTypeV)
+	if err == nil {
+		params.type_v = typeV
+	}
 	return ContextParams{c: params}
 }
 
