@@ -758,6 +758,8 @@ func (s *Server) loadModel(
 	flashAttention bool,
 	threads int,
 	multiUserCache bool,
+	cacheTypeK string,
+	cacheTypeV string,
 ) {
 	llama.BackendInit()
 
@@ -767,7 +769,7 @@ func (s *Server) loadModel(
 		panic(err)
 	}
 
-	ctxParams := llama.NewContextParams(kvSize, s.batchSize*s.parallel, s.parallel, threads, flashAttention)
+	ctxParams := llama.NewContextParams(kvSize, s.batchSize*s.parallel, s.parallel, threads, flashAttention, cacheTypeK, cacheTypeV)
 	s.lc, err = llama.NewContextWithModel(s.model, ctxParams)
 	if err != nil {
 		panic(err)
@@ -817,6 +819,8 @@ func main() {
 	multiUserCache := flag.Bool("multiuser-cache", false, "optimize input cache algorithm for multiple users")
 	// Expose requirements as a JSON output to stdout
 	requirements := flag.Bool("requirements", false, "print json requirement information")
+	cacheTypeK := flag.String("cache-type-k", "f16", "quantization type for key in cache (default: f16)")
+	cacheTypeV := flag.String("cache-type-v", "f16", "quantization type for value in cache (default: f16)")
 
 	// These are either ignored by llama.cpp or have no significance to us
 	_ = flag.Bool("embedding", false, "enable embedding vector output (default: disabled)")
@@ -877,7 +881,7 @@ func main() {
 	}
 
 	server.ready.Add(1)
-	go server.loadModel(params, *mpath, *lpath, *ppath, *kvSize, *flashAttention, *threads, *multiUserCache)
+	go server.loadModel(params, *mpath, *lpath, *ppath, *kvSize, *flashAttention, *threads, *multiUserCache, *cacheTypeK, *cacheTypeV)
 
 	server.cond = sync.NewCond(&server.mu)
 

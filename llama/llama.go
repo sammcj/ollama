@@ -137,7 +137,7 @@ type ContextParams struct {
 	c C.struct_llama_context_params
 }
 
-func NewContextParams(numCtx int, batchSize int, numSeqMax int, threads int, flashAttention bool) ContextParams {
+func NewContextParams(numCtx int, batchSize int, numSeqMax int, threads int, flashAttention bool, cacheTypeK string, cacheTypeV string) ContextParams {
 	params := C.llama_context_default_params()
 	params.n_ctx = C.uint(numCtx)
 	params.n_batch = C.uint(batchSize)
@@ -146,6 +146,9 @@ func NewContextParams(numCtx int, batchSize int, numSeqMax int, threads int, fla
 	params.n_threads_batch = params.n_threads
 	params.embeddings = C.bool(true)
 	params.flash_attn = C.bool(flashAttention)
+	params.type_k = KvCacheTypeFromStr(cacheTypeK)
+	params.type_v = KvCacheTypeFromStr(cacheTypeV)
+
 	return ContextParams{c: params}
 }
 
@@ -620,4 +623,28 @@ func (s *SamplingContext) Sample(llamaContext *Context, idx int) int {
 
 func (s *SamplingContext) Accept(id int, applyGrammar bool) {
 	C.gpt_sampler_caccept(s.c, C.llama_token(id), C.bool(applyGrammar))
+}
+
+// KvCacheTypeFromStr converts a string cache type to the corresponding GGML type value
+func KvCacheTypeFromStr(s string) C.enum_ggml_type {
+	switch s {
+	case "f32":
+		return C.GGML_TYPE_F32
+	case "f16":
+		return C.GGML_TYPE_F16
+	case "q8_0":
+		return C.GGML_TYPE_Q8_0
+	case "q4_0":
+		return C.GGML_TYPE_Q4_0
+	case "q4_1":
+		return C.GGML_TYPE_Q4_1
+	case "iq4_nl":
+		return C.GGML_TYPE_IQ4_NL
+	case "q5_0":
+		return C.GGML_TYPE_Q5_0
+	case "q5_1":
+		return C.GGML_TYPE_Q5_1
+	default:
+		panic("Unsupported cache type: " + s)
+	}
 }
