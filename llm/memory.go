@@ -147,9 +147,6 @@ func EstimateGPULayers(gpus []discover.GpuInfo, ggml *GGML, projectors []string,
 		graphFullOffload = graphPartialOffload
 	}
 
-	// KV is proportional to the number of layers
-	layerSize += kv / ggml.KV().BlockCount()
-
 	// on metal there's no partial offload overhead
 	if gpus[0].Library == "metal" {
 		graphPartialOffload = graphFullOffload
