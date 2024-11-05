@@ -141,10 +141,10 @@ func EstimateGPULayers(gpus []discover.GpuInfo, ggml *GGML, projectors []string,
 	_, graphPartialOffload, graphFullOffload = ggml.GraphSize(uint64(opts.NumCtx), uint64(min(opts.NumCtx, opts.NumBatch)))
 
 	if graphPartialOffload == 0 {
-			graphPartialOffload = ggml.KV().GQA() * kv / 6
+		graphPartialOffload = ggml.KV().GQA() * kv / 6
 	}
 	if graphFullOffload == 0 {
-			graphFullOffload = graphPartialOffload
+		graphFullOffload = graphPartialOffload
 	}
 
 	// KV is proportional to the number of layers
