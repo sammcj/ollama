@@ -207,26 +207,28 @@ type Metrics struct {
 // to the API docs also.
 type Options struct {
 	Runner
+	ModelfileOptions
 
 	// Predict options used at runtime
-	NumKeep          int      `json:"num_keep,omitempty"`
-	Seed             int      `json:"seed,omitempty"`
-	NumPredict       int      `json:"num_predict,omitempty"`
-	TopK             int      `json:"top_k,omitempty"`
-	TopP             float32  `json:"top_p,omitempty"`
-	MinP             float32  `json:"min_p,omitempty"`
-	TFSZ             float32  `json:"tfs_z,omitempty"`
-	TypicalP         float32  `json:"typical_p,omitempty"`
-	RepeatLastN      int      `json:"repeat_last_n,omitempty"`
-	Temperature      float32  `json:"temperature,omitempty"`
-	RepeatPenalty    float32  `json:"repeat_penalty,omitempty"`
-	PresencePenalty  float32  `json:"presence_penalty,omitempty"`
-	FrequencyPenalty float32  `json:"frequency_penalty,omitempty"`
-	Mirostat         int      `json:"mirostat,omitempty"`
-	MirostatTau      float32  `json:"mirostat_tau,omitempty"`
-	MirostatEta      float32  `json:"mirostat_eta,omitempty"`
-	PenalizeNewline  bool     `json:"penalize_newline,omitempty"`
-	Stop             []string `json:"stop,omitempty"`
+	NumKeep          int              `json:"num_keep,omitempty"`
+	Seed             int              `json:"seed,omitempty"`
+	NumPredict       int              `json:"num_predict,omitempty"`
+	TopK             int              `json:"top_k,omitempty"`
+	TopP             float32          `json:"top_p,omitempty"`
+	MinP             float32          `json:"min_p,omitempty"`
+	TFSZ             float32          `json:"tfs_z,omitempty"`
+	TypicalP         float32          `json:"typical_p,omitempty"`
+	RepeatLastN      int              `json:"repeat_last_n,omitempty"`
+	Temperature      float32          `json:"temperature,omitempty"`
+	RepeatPenalty    float32          `json:"repeat_penalty,omitempty"`
+	PresencePenalty  float32          `json:"presence_penalty,omitempty"`
+	FrequencyPenalty float32          `json:"frequency_penalty,omitempty"`
+	Mirostat         int              `json:"mirostat,omitempty"`
+	MirostatTau      float32          `json:"mirostat_tau,omitempty"`
+	MirostatEta      float32          `json:"mirostat_eta,omitempty"`
+	PenalizeNewline  bool             `json:"penalize_newline,omitempty"`
+	Stop             []string         `json:"stop,omitempty"`
+	Modelfile        ModelfileOptions `json:"modelfile,omitempty"`
 }
 
 // Runner options which must be set when the model is loaded into memory
@@ -242,6 +244,12 @@ type Runner struct {
 	UseMMap   *bool `json:"use_mmap,omitempty"`
 	UseMLock  bool  `json:"use_mlock,omitempty"`
 	NumThread int   `json:"num_thread,omitempty"`
+}
+
+// ModelfileOptions are options for loading a model file that aren't available via the HTTP API
+type ModelfileOptions struct {
+	CacheTypeK string `json:"cache_type_k,omitempty"`
+	CacheTypeV string `json:"cache_type_v,omitempty"`
 }
 
 // EmbedRequest is the request passed to [Client.Embed].
@@ -605,6 +613,8 @@ func DefaultOptions() Options {
 		MirostatEta:      0.1,
 		PenalizeNewline:  true,
 		Seed:             -1,
+
+		Modelfile: ModelfileOptions{},
 
 		Runner: Runner{
 			// options set when the model is loaded

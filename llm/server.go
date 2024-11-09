@@ -291,6 +291,7 @@ func NewLlamaServer(gpus discover.GpuInfoList, model string, ggml *GGML, adapter
 		params = append(params, "--flash-attn")
 		slog.Info("Enabling flash attention")
 
+		cacheTypeK, cacheTypeV := getCacheTypeSettings(opts)
 		setCacheTypeParam("--cache-type-k", cacheTypeK)
 		setCacheTypeParam("--cache-type-v", cacheTypeV)
 	} else {
@@ -535,6 +536,21 @@ func (s ServerStatus) ToString() string {
 	default:
 		return "llm server error"
 	}
+}
+
+func getCacheTypeSettings(opts api.Options) (cacheTypeK string, cacheTypeV string) {
+	// Check ModelfileOptions first, then fall back to env vars
+	cacheTypeK = opts.Modelfile.CacheTypeK
+	if cacheTypeK == "" {
+		cacheTypeK = envconfig.CacheTypeK()
+	}
+
+	cacheTypeV = opts.Modelfile.CacheTypeV
+	if cacheTypeV == "" {
+		cacheTypeV = envconfig.CacheTypeV()
+	}
+
+	return
 }
 
 type ServerStatusResp struct {
