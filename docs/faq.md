@@ -291,16 +291,15 @@ Installing multiple GPUs of the same brand can be a great way to increase your a
 
 Flash Attention is a feature of most (but not all) modern models that can significantly reduce memory usage as the context size grows.  To enable Flash Attention, set the `OLLAMA_FLASH_ATTENTION` environment variable to `1` when starting the Ollama server.
 
-> Note: If you're using an uncommon quantization type with CUDA, you may benefit from build Ollama with `LLAMA_CUDA_FA_ALL_QUANTS=1` to make llama.cpp build all flash attention quantization types.
+> Note: If you're using an uncommon quantization type with CUDA, advanced users may benefit from building Ollama and passing `GGML_CUDA_FA_ALL_QUANTS=1` to the llama.cpp build to enable FA for all combinations of quantisation types. More information on this can be found in [llama.cpp](https://github.com/ggerganov/llama.cpp/blob/fb4a0ec0833c71cff5a1a367ba375447ce6106eb/ggml/src/ggml-cuda/fattn-common.cuh#L575).
 
 ## How can I set the quantization type for the K/V cache?
 
 The K/V context cache can be quantized to significantly reduce memory usage when Flash Attention is enabled.
 
-To use quantized K/V cache with Ollama you can set the following environment variables:
+To use quantized K/V cache with Ollama you can set the following environment variable:
 
-- `OLLAMA_CACHE_TYPE_K` - The quantization type for the key cache.  Default is `f16`.
-- `OLLAMA_CACHE_TYPE_V` - The quantization type for the value cache.  Default is `f16`.
+- `OLLAMA_KV_CACHE_TYPE` - The quantization type for the K/V cache.  Default is `f16`.
 
 > Note: Currently this is a global option - meaning all models will run with the specified quantization type.
 

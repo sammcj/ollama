@@ -218,11 +218,13 @@ func NewLlamaServer(gpus discover.GpuInfoList, model string, ggml *GGML, adapter
 		params = append(params, "--threads", strconv.Itoa(defaultThreads))
 	}
 
+	// isEmbeddingModel checks for common GGML attributes that help distinguish most embedding models from normal models.
 	isEmbeddingModel := false
 	if _, ok := ggml.KV()[fmt.Sprintf("%s.pooling_type", ggml.KV().Architecture())]; ok {
 		isEmbeddingModel = true
 	}
 
+	// Validates and applies KV cache parameters
 	setCacheTypeParam := func(paramName, cacheType string) {
 		if cacheType == "" {
 			return
@@ -245,9 +247,7 @@ func NewLlamaServer(gpus discover.GpuInfoList, model string, ggml *GGML, adapter
 		slog.Debug("Setting cache type", "param", paramName, "type", cacheType)
 	}
 
-	// Define cacheTypeK and cacheTypeV
-	cacheTypeK := envconfig.CacheTypeK()
-	cacheTypeV := envconfig.CacheTypeV()
+	kvCacheType := envconfig.KvCacheType()
 
 	// Set cache types only if they are not empty
 	supportsFlashAttention := func(ggml *GGML) bool {
@@ -255,12 +255,12 @@ func NewLlamaServer(gpus discover.GpuInfoList, model string, ggml *GGML, adapter
 		headCountV := ggml.KV().EmbeddingHeadCountV()
 
 		if headCountK == 0 || headCountV == 0 {
-			slog.Debug("Model is missing embedding head count for K or V")
+			slog.Debug("Model is missing embedding head count for K or V, does not support flash attention")
 			return false
 		}
 
 		if headCountK != headCountV {
-			slog.Debug("Embedding head count K does not equal V", "K", headCountK, "V", headCountV)
+			slog.Debug("Embedding head count K does not equal V, does not support flash attention", "K", headCountK, "V", headCountV)
 			return false
 		}
 
@@ -291,15 +291,13 @@ func NewLlamaServer(gpus discover.GpuInfoList, model string, ggml *GGML, adapter
 		params = append(params, "--flash-attn")
 		slog.Info("Enabling flash attention")
 
-		cacheTypeK, cacheTypeV := getCacheTypeSettings(opts)
-		setCacheTypeParam("--cache-type-k", cacheTypeK)
-		setCacheTypeParam("--cache-type-v", cacheTypeV)
+		setCacheTypeParam("--kv-cache-type", kvCacheType)
 	} else {
 		slog.Info("Flash attention not enabled")
 		quantizedCacheTypes := []string{"q8_0", "q5_1", "q5_0", "iq4_nl", "q4_1", "q4_0"}
-		if !isEmbeddingModel && (cacheTypeK != "" || cacheTypeV != "") {
-			if slices.Contains(quantizedCacheTypes, cacheTypeK) || slices.Contains(quantizedCacheTypes, cacheTypeV) {
-				slog.Warn("Quantized cache types require flash attention. Using default cache types.")
+		if !isEmbeddingModel && (kvCacheType != "") {
+			if slices.Contains(quantizedCacheTypes, kvCacheType) {
+				slog.Warn("Quantized cache types require flash attention. Falling back to default cache types.")
 			}
 		}
 	}

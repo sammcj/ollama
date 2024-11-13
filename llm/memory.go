@@ -129,10 +129,8 @@ func EstimateGPULayers(gpus []discover.GpuInfo, ggml *GGML, projectors []string,
 		isEmbeddingModel = true
 	}
 
-	// Estimate the memory required for K and V caches separately as they can have different quantization types
-	kSize := estimateKvCacheSize(envconfig.CacheTypeK(), uint64(opts.NumCtx), ggml.KV().BlockCount(), ggml.KV().EmbeddingHeadCountK(), ggml.KV().HeadCountKV(), isEmbeddingModel)
-	vSize := estimateKvCacheSize(envconfig.CacheTypeV(), uint64(opts.NumCtx), ggml.KV().BlockCount(), ggml.KV().EmbeddingHeadCountV(), ggml.KV().HeadCountKV(), isEmbeddingModel)
-	kv := kSize + vSize
+	// Estimate the memory required for KV cache quantisation
+	kv := estimateKvCacheSize(envconfig.KvCacheType(), uint64(opts.NumCtx), ggml.KV().BlockCount(), ggml.KV().EmbeddingHeadCountK(), ggml.KV().HeadCountKV(), isEmbeddingModel) * 2
 
 	// KV is proportional to the number of layers
 	layerSize += kv / ggml.KV().BlockCount()
