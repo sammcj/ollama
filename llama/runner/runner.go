@@ -471,7 +471,7 @@ func (s *Server) processBatch(tokenBatch *llama.Batch, embedBatch *llama.Batch) 
 			// the last one generated wasn't submitted to Decode
 			// - Remove any stop sequences that we stripped out
 			// - If truncateStop removed a portion of a token, drop that
-			// - As defense-in-depth, if truncatedToken didn't find a stop token
+			// - As defence-in-depth, if truncatedToken didn't find a stop token
 			// remove the extra one that we added to the cache len
 			tokenLen := len(seq.cache.Inputs) + 1
 			tokenLen -= origLen - newLen
@@ -762,8 +762,7 @@ func (s *Server) loadModel(
 	flashAttention bool,
 	threads int,
 	multiUserCache bool,
-	cacheTypeK string,
-	cacheTypeV string,
+	kvCacheType string,
 ) {
 	llama.BackendInit()
 
@@ -773,7 +772,7 @@ func (s *Server) loadModel(
 		panic(err)
 	}
 
-	ctxParams := llama.NewContextParams(kvSize, s.batchSize*s.parallel, s.parallel, threads, flashAttention, cacheTypeK, cacheTypeV)
+	ctxParams := llama.NewContextParams(kvSize, s.batchSize*s.parallel, s.parallel, threads, flashAttention, kvCacheType)
 	s.lc, err = llama.NewContextWithModel(s.model, ctxParams)
 	if err != nil {
 		panic(err)
@@ -821,8 +820,7 @@ func main() {
 	tensorSplit := flag.String("tensor-split", "", "fraction of the model to offload to each GPU, comma-separated list of proportions")
 	multiUserCache := flag.Bool("multiuser-cache", false, "optimize input cache algorithm for multiple users")
 	requirements := flag.Bool("requirements", false, "print json requirement information")
-	cacheTypeK := flag.String("cache-type-k", "f16", "quantization type for key in cache (default: f16)")
-	cacheTypeV := flag.String("cache-type-v", "f16", "quantization type for value in cache (default: f16)")
+	kvCacheType := flag.String("kv-cache-type", "f16", "quantization type for KV cache (default: f16)")
 
 	flag.Parse()
 	if *requirements {
@@ -878,7 +876,7 @@ func main() {
 	}
 
 	server.ready.Add(1)
-	go server.loadModel(params, *mpath, *lpath, *ppath, *kvSize, *flashAttention, *threads, *multiUserCache, *cacheTypeK, *cacheTypeV)
+	go server.loadModel(params, *mpath, *lpath, *ppath, *kvSize, *flashAttention, *threads, *multiUserCache, *kvCacheType)
 
 	server.cond = sync.NewCond(&server.mu)
 
