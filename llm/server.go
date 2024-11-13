@@ -536,21 +536,6 @@ func (s ServerStatus) ToString() string {
 	}
 }
 
-func getCacheTypeSettings(opts api.Options) (cacheTypeK string, cacheTypeV string) {
-	// Check ModelfileOptions first, then fall back to env vars
-	cacheTypeK = opts.Modelfile.CacheTypeK
-	if cacheTypeK == "" {
-		cacheTypeK = envconfig.CacheTypeK()
-	}
-
-	cacheTypeV = opts.Modelfile.CacheTypeV
-	if cacheTypeV == "" {
-		cacheTypeV = envconfig.CacheTypeV()
-	}
-
-	return
-}
-
 type ServerStatusResp struct {
 	Status          string  `json:"status"`
 	SlotsIdle       int     `json:"slots_idle"`

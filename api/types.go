@@ -248,8 +248,7 @@ type Runner struct {
 
 // ModelfileOptions are options for loading a model file that aren't available via the HTTP API
 type ModelfileOptions struct {
-	CacheTypeK string `json:"cache_type_k,omitempty"`
-	CacheTypeV string `json:"cache_type_v,omitempty"`
+	KvCacheType string `json:"kv_cache_type,omitempty"`
 }
 
 // EmbedRequest is the request passed to [Client.Embed].
