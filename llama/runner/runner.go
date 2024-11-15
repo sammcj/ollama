@@ -14,11 +14,14 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"runtime/debug"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 	"unicode/utf8"
+
+	"golang.org/x/sync/semaphore"
 
 	"github.com/ollama/ollama/api"
 	"github.com/ollama/ollama/llama"
@@ -161,15 +164,13 @@ func (s *Server) inputs(prompt string, images []ImageData) ([]input, error) {
 
 	for i, part := range parts {
 		// text - tokenize
-		if strings.TrimSpace(part) != "" {
-			tokens, err := s.lc.Model().Tokenize(part, i == 0, true)
-			if err != nil {
-				return nil, err
-			}
+		tokens, err := s.lc.Model().Tokenize(part, i == 0, true)
+		if err != nil {
+			return nil, err
+		}
 
-			for _, t := range tokens {
-				inputs = append(inputs, input{token: t})
-			}
+		for _, t := range tokens {
+			inputs = append(inputs, input{token: t})
 		}
 
 		// image - generate image embedding
@@ -203,38 +204,51 @@ func (s *Server) inputs(prompt string, images []ImageData) ([]input, error) {
 }
 
 type Server struct {
-	model *llama.Model
-	lc    *llama.Context
+	// is the server ready to process requests?
+	// protects access to model and image
+	ready sync.WaitGroup
 
-	// required for image embeddings
+	// loaded model
+	model *llama.Model
+
+	// image model context for multi-modal models
 	image *ImageContext
 
+	// status for external health reporting - loading, ready to serve, etc.
+	status ServerStatus
+
+	// current progress on loading the model
+	progress float32
+
+	// number of simultaneous requests to handle
+	parallel int
+
+	// maximum number of elements in a batch (per sequence)
 	// TODO (jmorganca): make this n_batch
 	batchSize int
 
-	// parallel is the number of parallel requests to handle
-	parallel int
+	// protects access to everything below this line
+	// this is context state needed for decoding
+	mu sync.Mutex
 
-	// seqs is the list of parallel sequences being evaluated
-	// TODO (jmorganca): this can probably be moved into run()
+	// indicates that data is ready for processing
+	cond *sync.Cond
+
+	// decoding state
+	lc *llama.Context
+
+	// the list of simultaneous sequences being evaluated
 	seqs []*Sequence
+
+	// seqs can have a maximum of parallel entries, which
+	// is enfoced by seqSem
+	seqsSem *semaphore.Weighted
 
 	// KV cache
 	cache *InputCache
 
 	// next sequence for prompt processing to avoid starvation
 	nextSeq int
-
-	// is the server ready to process requests?
-	ready sync.WaitGroup
-
-	mu sync.Mutex
-
-	cond *sync.Cond
-
-	progress float32
-
-	status ServerStatus
 }
 
 func (s *Server) allNil() bool {
@@ -326,6 +340,15 @@ func (s *Server) run(ctx context.Context) {
 // it should only be responsible for accepting tokens or embeddings and
 // processing batches as fast as possible
 func (s *Server) processBatch(tokenBatch *llama.Batch, embedBatch *llama.Batch) {
+	// Try to keep going even if we hit a panic so that corner cases don't take the whole
+	// runner down. In most cases, this will result in dropping the tokens that we are currently
+	// processing and then continuing with what is remaining.
+	defer func() {
+		if err := recover(); err != nil {
+			slog.Error("error while processing batch", "error", err, "stack", debug.Stack())
+		}
+	}()
+
 	s.mu.Lock()
 	for s.allNil() {
 		s.cond.Wait() // Wait until an item is added
@@ -341,6 +364,14 @@ func (s *Server) processBatch(tokenBatch *llama.Batch, embedBatch *llama.Batch) 
 		seq := s.seqs[seqIdx]
 
 		if seq == nil {
+			continue
+		}
+
+		// If an error occurred during the processing of a previous batch then we may have emptied the inputs
+		// without adding a new one. In this case, end the sequence rather than infinite looping.
+		if len(seq.inputs) == 0 {
+			slog.Error("removing sequence due to no input tokens", "index", seqIdx, "cache id", seq.cache.Id)
+			s.removeSequence(seqIdx, "error")
 			continue
 		}
 
@@ -407,6 +438,13 @@ func (s *Server) processBatch(tokenBatch *llama.Batch, embedBatch *llama.Batch) 
 	if err != nil {
 		slog.Error("failed to decode batch", "error", err)
 		return
+	}
+
+	if crossAttention {
+		// synchronize state to ensure the cross attention batch is complete.
+		// needed specifically for multi-GPU systems otherwise an inflight
+		// task may be incorrectly invalidated causing a crash
+		s.lc.Synchronize()
 	}
 
 	for i, seq := range s.seqs {
@@ -592,8 +630,13 @@ func (s *Server) completion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO (jmorganca): add to sequence queue instead of
-	// failing if a slot isn't available
+	// Ensure that a place to put the sequence is available
+	if err := s.seqsSem.Acquire(r.Context(), 1); err != nil {
+		slog.Error("Failed to acquire semaphore", "error", err)
+		return
+	}
+	defer s.seqsSem.Release(1)
+
 	s.mu.Lock()
 	for i, sq := range s.seqs {
 		if sq == nil {
@@ -676,7 +719,13 @@ func (s *Server) embeddings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO (jessegross): Wait for a free slot instead of failing and blocking forever
+	// Ensure that a place to put the sequence is available
+	if err := s.seqsSem.Acquire(r.Context(), 1); err != nil {
+		slog.Error("Failed to acquire semaphore", "error", err)
+		return
+	}
+	defer s.seqsSem.Release(1)
+
 	s.mu.Lock()
 	for i, sq := range s.seqs {
 		if sq == nil {
@@ -833,6 +882,7 @@ func main() {
 		batchSize: *batchSize,
 		parallel:  *parallel,
 		seqs:      make([]*Sequence, *parallel),
+		seqsSem:   semaphore.NewWeighted(int64(*parallel)),
 		status:    ServerStatusLoadingModel,
 	}
 
