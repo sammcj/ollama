@@ -218,44 +218,35 @@ func NewLlamaServer(gpus discover.GpuInfoList, model string, ggml *GGML, adapter
 		params = append(params, "--threads", strconv.Itoa(defaultThreads))
 	}
 
+	// Check for embedding model first since we need this in both cases
+	var isEmbeddingModel bool
+	if _, ok := ggml.KV()[fmt.Sprintf("%s.pooling_type", ggml.KV().Architecture())]; ok {
+		isEmbeddingModel = true
+	}
+
 	// Check flash attention support
 	flashAttnRequested := envconfig.FlashAttention()
-	if flashAttnRequested {
-		if gpus.SupportsFlashAttention() && supportsFlashAttention(ggml) {
-			params = append(params, "--flash-attn")
-			slog.Info("Enabling flash attention")
+	if flashAttnRequested && gpus.SupportsFlashAttention() && supportsFlashAttention(ggml) {
+		params = append(params, "--flash-attn")
+		slog.Info("Enabling flash attention")
 
-			// Only validate and set KV cache type when flash attention is enabled
-			kvCacheType := envconfig.KvCacheType()
-			if kvCacheType != "" {
-				isEmbeddingModel := false
-				if _, ok := ggml.KV()[fmt.Sprintf("%s.pooling_type", ggml.KV().Architecture())]; ok {
-					isEmbeddingModel = true
-				}
-
-				if validatedType, _ := ValidateKVCacheType(kvCacheType, isEmbeddingModel); validatedType != "" {
-					params = append(params, "--kv-cache-type", validatedType)
-					slog.Debug("Setting cache type", "type", validatedType)
-				}
+		// Handle KV cache type
+		kvCacheType := envconfig.KvCacheType()
+		if kvCacheType != "" {
+			if !slices.Contains(ValidKVCacheTypes, kvCacheType) {
+				slog.Warn("invalid cache type, defaulting to f16", "type", kvCacheType)
+				kvCacheType = "f16"
 			}
-		} else {
-			slog.Info("Flash attention not enabled")
 
-			// Check for quantized cache types without flash attention
-			kvCacheType := envconfig.KvCacheType()
-			if kvCacheType != "" {
-				isEmbeddingModel := false
-				if _, ok := ggml.KV()[fmt.Sprintf("%s.pooling_type", ggml.KV().Architecture())]; ok {
-					isEmbeddingModel = true
-				}
-
-				if !isEmbeddingModel {
-					quantizedTypes := []string{"q8_0", "q4_0"}
-					if slices.Contains(quantizedTypes, kvCacheType) {
-						slog.Warn("Quantized cache types require flash attention. Using default cache type.")
-					}
-				}
+			// For embedding models, only allow f16 and f32
+			if isEmbeddingModel && kvCacheType != "f16" && kvCacheType != "f32" {
+				slog.Warn("only f16 and f32 cache types are supported for embedding models, defaulting to f16",
+					"type", kvCacheType)
+				kvCacheType = "f16"
 			}
+
+			params = append(params, "--kv-cache-type", kvCacheType)
+			slog.Debug("Setting cache type", "type", kvCacheType)
 		}
 	}
 
