@@ -61,35 +61,3 @@ func ValidateKVCacheType(cacheType string, isEmbedding bool) (string, error) {
 
 	return cacheType, nil
 }
-
-// GetServerParams returns the validated and formatted server parameters
-func GetServerParams(ggml GGMLModel, gpus discover.GpuInfoList, flashAttnRequested bool, kvCacheType string, baseParams []string) []string {
-	params := slices.Clone(baseParams)
-
-	flashAttnEnabled := ValidateFlashAttentionSupport(ggml, gpus, flashAttnRequested)
-	isEmbeddingModel := false
-	if _, ok := ggml.KV()[fmt.Sprintf("%s.pooling_type", ggml.KV().Architecture())]; ok {
-		isEmbeddingModel = true
-	}
-
-	if flashAttnEnabled {
-		params = append(params, "--flash-attn")
-		slog.Info("Enabling flash attention")
-
-		// Only set KV cache type when flash attention is enabled
-		if validatedType, _ := ValidateKVCacheType(kvCacheType, isEmbeddingModel); validatedType != "" {
-			params = append(params, "--kv-cache-type", validatedType)
-			slog.Debug("Setting cache type", "type", validatedType)
-		}
-	} else {
-		slog.Info("Flash attention not enabled")
-		if !isEmbeddingModel && kvCacheType != "" {
-			quantizedTypes := []string{"q8_0", "q4_0"}
-			if slices.Contains(quantizedTypes, kvCacheType) {
-				slog.Warn("Quantized cache types require flash attention. Using default cache type.")
-			}
-		}
-	}
-
-	return params
-}

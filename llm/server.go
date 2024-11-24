@@ -17,6 +17,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -217,11 +218,46 @@ func NewLlamaServer(gpus discover.GpuInfoList, model string, ggml *GGML, adapter
 		params = append(params, "--threads", strconv.Itoa(defaultThreads))
 	}
 
-	// Get KV cache type from config
-	kvCacheType := envconfig.KvCacheType()
+	// Check flash attention support
+	flashAttnRequested := envconfig.FlashAttention()
+	if flashAttnRequested {
+		if gpus.SupportsFlashAttention() && supportsFlashAttention(ggml) {
+			params = append(params, "--flash-attn")
+			slog.Info("Enabling flash attention")
 
-	// Get validated parameters including flash attention and KV cache settings
-	params = GetServerParams(ggml, gpus, envconfig.FlashAttention(), kvCacheType, params)
+			// Only validate and set KV cache type when flash attention is enabled
+			kvCacheType := envconfig.KvCacheType()
+			if kvCacheType != "" {
+				isEmbeddingModel := false
+				if _, ok := ggml.KV()[fmt.Sprintf("%s.pooling_type", ggml.KV().Architecture())]; ok {
+					isEmbeddingModel = true
+				}
+
+				if validatedType, _ := ValidateKVCacheType(kvCacheType, isEmbeddingModel); validatedType != "" {
+					params = append(params, "--kv-cache-type", validatedType)
+					slog.Debug("Setting cache type", "type", validatedType)
+				}
+			}
+		} else {
+			slog.Info("Flash attention not enabled")
+
+			// Check for quantized cache types without flash attention
+			kvCacheType := envconfig.KvCacheType()
+			if kvCacheType != "" {
+				isEmbeddingModel := false
+				if _, ok := ggml.KV()[fmt.Sprintf("%s.pooling_type", ggml.KV().Architecture())]; ok {
+					isEmbeddingModel = true
+				}
+
+				if !isEmbeddingModel {
+					quantizedTypes := []string{"q8_0", "q4_0"}
+					if slices.Contains(quantizedTypes, kvCacheType) {
+						slog.Warn("Quantized cache types require flash attention. Using default cache type.")
+					}
+				}
+			}
+		}
+	}
 
 	// mmap has issues with partial offloading on metal
 	for _, g := range gpus {

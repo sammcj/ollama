@@ -291,8 +291,6 @@ When loading a new model, Ollama evaluates the required VRAM for the model again
 
 Flash Attention is a feature of most modern models that can significantly reduce memory usage as the context size grows.  To enable Flash Attention, set the `OLLAMA_FLASH_ATTENTION` environment variable to `1` when starting the Ollama server.
 
-> Note: Advanced users using CUDA may benefit from building Ollama and passing `GGML_CUDA_FA_ALL_QUANTS=1` to the llama.cpp build to enable FA for all combinations of quantization types. More information on this can be found in [llama.cpp](https://github.com/ggerganov/llama.cpp/blob/fb4a0ec0833c71cff5a1a367ba375447ce6106eb/ggml/src/ggml-cuda/fattn-common.cuh#L575).
-
 ## How can I set the quantization type for the K/V cache?
 
 The K/V context cache can be quantized to significantly reduce memory usage when Flash Attention is enabled.
