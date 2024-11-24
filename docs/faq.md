@@ -301,7 +301,7 @@ To use quantized K/V cache with Ollama you can set the following environment var
 
 > Note: Currently this is a global option - meaning all models will run with the specified quantization type.
 
-There are [a number of quantization types available](https://github.com/ggerganov/llama.cpp/pull/7527), the most commonly used are:
+The currently available K/V cache quantization types are:
 
 - `f32` - full precision and memory usage.
 - `f16` - high precision and memory usage (default).
