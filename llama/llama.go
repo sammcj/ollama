@@ -150,8 +150,8 @@ func NewContextParams(numCtx int, batchSize int, numSeqMax int, threads int, fla
 	params.n_threads_batch = params.n_threads
 	params.embeddings = C.bool(true)
 	params.flash_attn = C.bool(flashAttention)
-	params.type_k = KvCacheTypeFromStr(kvCacheType)
-	params.type_v = KvCacheTypeFromStr(kvCacheType)
+	params.type_k = KvCacheTypeFromStr(strings.ToLower(kvCacheType))
+	params.type_v = KvCacheTypeFromStr(strings.ToLower(kvCacheType))
 
 	return ContextParams{c: params}
 }

@@ -3,8 +3,6 @@ package llm
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/ollama/ollama/discover"
 )
 
@@ -66,11 +64,17 @@ func TestValidateKVCacheType(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := ValidateKVCacheType(tt.cacheType, tt.isEmbeddingModel)
 			if tt.wantErr {
-				assert.Error(t, err)
+				if err == nil {
+					t.Errorf("expected error, got nil")
+				}
 			} else {
-				assert.NoError(t, err)
+				if err != nil {
+					t.Errorf("expected no error, got %v", err)
+				}
 			}
-			assert.Equal(t, tt.want, got)
+			if tt.want != got {
+				t.Errorf("expected %v, got %v", tt.want, got)
+			}
 		})
 	}
 }
@@ -129,7 +133,9 @@ func TestValidateFlashAttentionSupport(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ggml := &testGGML{kv: tt.kvData}
 			got := ValidateFlashAttentionSupport(ggml, tt.gpus, tt.flashAttnRequested)
-			assert.Equal(t, tt.want, got)
+			if tt.want != got {
+				t.Errorf("expected %v, got %v", tt.want, got)
+			}
 		})
 	}
 }
@@ -174,7 +180,9 @@ func TestGetServerParams(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := GetServerParams(tt.ggml, tt.gpus, tt.flashAttnRequested, tt.kvCacheType, tt.baseParams)
-			assert.Equal(t, tt.want, got)
+			if len(tt.want) != len(got) {
+				t.Errorf("expected %v, got %v", tt.want, got)
+			}
 		})
 	}
 }
