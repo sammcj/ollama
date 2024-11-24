@@ -17,63 +17,60 @@ func (g *testGGML) KV() KV {
 
 func TestValidateKVCacheType(t *testing.T) {
 	tests := []struct {
-		name             string
-		cacheType        string
-		isEmbeddingModel bool
-		want             string
-		wantErr          bool
+		name        string
+		cacheType   string
+		isEmbedding bool
+		expected    string
+		expectError bool
 	}{
 		{
-			name:             "valid type for normal model with q4_0 kv",
-			cacheType:        "q4_0",
-			isEmbeddingModel: false,
-			want:             "q4_0",
-			wantErr:          false,
+			name:        "empty cache type",
+			cacheType:   "",
+			isEmbedding: false,
+			expected:    "",
+			expectError: false,
 		},
 		{
-			name:             "valid type for normal model with q8_0 kv",
-			cacheType:        "q8_0",
-			isEmbeddingModel: false,
-			want:             "q8_0",
-			wantErr:          false,
+			name:        "invalid cache type",
+			cacheType:   "invalid",
+			isEmbedding: false,
+			expected:    "f16",
+			expectError: false,
 		},
 		{
-			name:             "invalid type",
-			cacheType:        "invalid",
-			isEmbeddingModel: false,
-			want:             "f16",
-			wantErr:          false,
+			name:        "embedding model with q4_0",
+			cacheType:   "q4_0",
+			isEmbedding: true,
+			expected:    "f16",
+			expectError: false,
 		},
 		{
-			name:             "quantized type for embedding model",
-			cacheType:        "q8_0",
-			isEmbeddingModel: true,
-			want:             "f16",
-			wantErr:          false,
+			name:        "embedding model with f32",
+			cacheType:   "f32",
+			isEmbedding: true,
+			expected:    "f32",
+			expectError: false,
 		},
 		{
-			name:             "valid type for embedding model",
-			cacheType:        "f16",
-			isEmbeddingModel: true,
-			want:             "f16",
-			wantErr:          false,
+			name:        "non-embedding model with q4_0",
+			cacheType:   "q4_0",
+			isEmbedding: false,
+			expected:    "q4_0",
+			expectError: false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := ValidateKVCacheType(tt.cacheType, tt.isEmbeddingModel)
-			if tt.wantErr {
-				if err == nil {
-					t.Errorf("expected error, got nil")
-				}
-			} else {
-				if err != nil {
-					t.Errorf("expected no error, got %v", err)
-				}
+			result, err := ValidateKVCacheType(tt.cacheType, tt.isEmbedding)
+			if tt.expectError && err == nil {
+				t.Errorf("expected error, got nil")
 			}
-			if tt.want != got {
-				t.Errorf("expected %v, got %v", tt.want, got)
+			if !tt.expectError && err != nil {
+				t.Errorf("expected no error, got %v", err)
+			}
+			if result != tt.expected {
+				t.Errorf("expected %s, got %s", tt.expected, result)
 			}
 		})
 	}

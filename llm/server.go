@@ -17,7 +17,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
-	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -218,7 +217,7 @@ func NewLlamaServer(gpus discover.GpuInfoList, model string, ggml *GGML, adapter
 		params = append(params, "--threads", strconv.Itoa(defaultThreads))
 	}
 
-	// Check for embedding model first since we need this in both cases
+	// Check flash attention support
 	var isEmbeddingModel bool
 	if _, ok := ggml.KV()[fmt.Sprintf("%s.pooling_type", ggml.KV().Architecture())]; ok {
 		isEmbeddingModel = true
@@ -233,20 +232,15 @@ func NewLlamaServer(gpus discover.GpuInfoList, model string, ggml *GGML, adapter
 		// Handle KV cache type
 		kvCacheType := envconfig.KvCacheType()
 		if kvCacheType != "" {
-			if !slices.Contains(ValidKVCacheTypes, kvCacheType) {
-				slog.Warn("invalid cache type, defaulting to f16", "type", kvCacheType)
-				kvCacheType = "f16"
+			// Move validation to the ValidateKVCacheType function
+			kvCacheType, err = ValidateKVCacheType(kvCacheType, isEmbeddingModel)
+			if err != nil {
+				return nil, err
 			}
-
-			// For embedding models, only allow f16 and f32
-			if isEmbeddingModel && kvCacheType != "f16" && kvCacheType != "f32" {
-				slog.Warn("only f16 and f32 cache types are supported for embedding models, defaulting to f16",
-					"type", kvCacheType)
-				kvCacheType = "f16"
+			if kvCacheType != "" {
+				params = append(params, "--kv-cache-type", kvCacheType)
+				slog.Debug("Setting cache type", "type", kvCacheType)
 			}
-
-			params = append(params, "--kv-cache-type", kvCacheType)
-			slog.Debug("Setting cache type", "type", kvCacheType)
 		}
 	}
 

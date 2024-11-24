@@ -455,14 +455,11 @@ func projectorMemoryRequirements(filename string) (weights, graphSize uint64) {
 func estimateKvCacheSize(cacheType string, numCtx, blockCount, embeddingHeadCount, headCountKV uint64, isEmbeddingModel bool) uint64 {
 	var bytesPerElement float64
 
-	// For embedding models, only f16 and f32 are supported
+	// For embedding models, automatically convert to f16
 	if isEmbeddingModel && cacheType != "f32" {
-		bytesPerElement = 2 // Default to f16 for embedding models
-		return uint64(float64(numCtx*blockCount*embeddingHeadCount*headCountKV) * bytesPerElement)
+		cacheType = "f16"
 	}
 
-	// Note the following llama.cpp cache types are not enabled:
-	// "q5_1" (0.65), "q5_0" (0.625), "iq4_nl" (0.6), "q4_1" (0.55)
 	switch cacheType {
 	case "f32", "fp32":
 		bytesPerElement = 4 // fp32

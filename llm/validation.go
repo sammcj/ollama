@@ -42,7 +42,7 @@ func supportsFlashAttention(ggml GGMLModel) bool {
 var ValidKVCacheTypes = []string{"f32", "f16", "q8_0", "q4_0"}
 
 // ValidateKVCacheType checks if the given cache type is valid for the model type
-func ValidateKVCacheType(cacheType string, isEmbedding bool) (string, error) {
+func ValidateKVCacheType(cacheType string, isEmbeddingModel bool) (string, error) {
 	if cacheType == "" {
 		return "", nil
 	}
@@ -53,7 +53,7 @@ func ValidateKVCacheType(cacheType string, isEmbedding bool) (string, error) {
 	}
 
 	// For embedding models, only allow f16 and f32
-	if isEmbedding && cacheType != "f16" && cacheType != "f32" {
+	if isEmbeddingModel && cacheType != "f16" && cacheType != "f32" {
 		slog.Warn("only f16 and f32 cache types are supported for embedding models, defaulting to f16",
 			"type", cacheType)
 		return "f16", nil
