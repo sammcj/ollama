@@ -124,13 +124,15 @@ func EstimateGPULayers(gpus []discover.GpuInfo, ggml *GGML, projectors []string,
 	}
 
 	// If the model is an embedding model ensure we use f16 for the K/V cache
+	isEmbeddingModel := false
 	kvCacheType := envconfig.KvCacheType()
 	if _, ok := ggml.KV()[fmt.Sprintf("%s.pooling_type", ggml.KV().Architecture())]; ok {
 		kvCacheType = "f16"
+		isEmbeddingModel = true
 	}
 
 	// Estimate the memory required for KV cache quantization
-	kv := estimateKvCacheSize(kvCacheType, uint64(opts.NumCtx), ggml.KV().BlockCount(), ggml.KV().EmbeddingHeadCountK(), ggml.KV().HeadCountKV()) * 2
+	kv := estimateKvCacheSize(kvCacheType, uint64(opts.NumCtx), ggml.KV().BlockCount(), ggml.KV().EmbeddingHeadCountK(), ggml.KV().HeadCountKV(), isEmbeddingModel) * 2
 
 	// KV is proportional to the number of layers
 	layerSize += kv / ggml.KV().BlockCount()
@@ -450,8 +452,14 @@ func projectorMemoryRequirements(filename string) (weights, graphSize uint64) {
 }
 
 // estimateKvCacheSize determines the memory required for K or V cache based on the quantization type
-func estimateKvCacheSize(cacheType string, numCtx, blockCount, embeddingHeadCount, headCountKV uint64) uint64 {
+func estimateKvCacheSize(cacheType string, numCtx, blockCount, embeddingHeadCount, headCountKV uint64, isEmbeddingModel bool) uint64 {
 	var bytesPerElement float64
+
+	// For embedding models, only f16 and f32 are supported
+	if isEmbeddingModel && cacheType != "f32" {
+		bytesPerElement = 2 // Default to f16 for embedding models
+		return uint64(float64(numCtx*blockCount*embeddingHeadCount*headCountKV) * bytesPerElement)
+	}
 
 	// Note the following llama.cpp cache types are not enabled:
 	// "q5_1" (0.65), "q5_0" (0.625), "iq4_nl" (0.6), "q4_1" (0.55)

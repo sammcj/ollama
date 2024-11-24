@@ -234,7 +234,7 @@ func TestEstimateKvCacheSize(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := estimateKvCacheSize(tt.cacheType, tt.numCtx, tt.blockCount, tt.embeddingHeadCount, tt.headCountKV)
+			result := estimateKvCacheSize(tt.cacheType, tt.numCtx, tt.blockCount, tt.embeddingHeadCount, tt.headCountKV, tt.isEmbeddingModel)
 			assert.Equal(t, tt.expected, result, "Estimated KV cache size does not match expected value")
 		})
 	}
