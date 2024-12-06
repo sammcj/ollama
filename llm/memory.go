@@ -140,6 +140,14 @@ func EstimateGPULayers(gpus []discover.GpuInfo, ggml *GGML, projectors []string,
 	// KV is proportional to the number of layers
 	layerSize += kv / ggml.KV().BlockCount()
 
+	// Flash attention reduces memory usage by ~40% for KV cache and graph
+	if fa {
+		const faCorrectionFactor = 0.6
+		graphPartialOffload = uint64(float64(graphPartialOffload) * faCorrectionFactor)
+		graphFullOffload = uint64(float64(graphFullOffload) * faCorrectionFactor)
+		layerSize = uint64(float64(layerSize) * faCorrectionFactor)
+	}
+
 	if graphPartialOffload == 0 {
 		graphPartialOffload = ggml.KV().GQA() * kv / 6
 	}
