@@ -142,17 +142,16 @@ func EstimateGPULayers(gpus []discover.GpuInfo, ggml *GGML, projectors []string,
 
 	// CHANGEME: Testing out fixes to the memory estimations
 	if fa {
+		// I don't quite know what 0.05 is the magic number, but it corrects the memory estimates
 		const faCorrectionFactor = 0.05
 		graphPartialOffload = uint64(float64(graphPartialOffload) * faCorrectionFactor)
 		graphFullOffload = uint64(float64(graphFullOffload) * faCorrectionFactor)
 		layerSize = uint64(float64(layerSize) * faCorrectionFactor)
-		// log all this to the console
-		slog.Info("flash attention memory correction", "factor", faCorrectionFactor)
-		slog.Info("flash attention memory correction", "graph_partial_offload", format.HumanBytes2(graphPartialOffload))
-		slog.Info("flash attention memory correction", "graph_full_offload", format.HumanBytes2(graphFullOffload))
-		slog.Info("flash attention memory correction", "layer_size", format.HumanBytes2(layerSize))
-		slog.Info("flash attention memory correction", "kv", format.HumanBytes2(kv))
-
+		slog.Debug("flash attention memory correction", "factor", faCorrectionFactor)
+		slog.Debug("flash attention memory correction", "graph_partial_offload", format.HumanBytes2(graphPartialOffload))
+		slog.Debug("flash attention memory correction", "graph_full_offload", format.HumanBytes2(graphFullOffload))
+		slog.Debug("flash attention memory correction", "layer_size", format.HumanBytes2(layerSize))
+		slog.Debug("flash attention memory correction", "kv", format.HumanBytes2(kv))
 	}
 
 	if graphPartialOffload == 0 {
