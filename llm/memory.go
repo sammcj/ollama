@@ -140,12 +140,19 @@ func EstimateGPULayers(gpus []discover.GpuInfo, ggml *GGML, projectors []string,
 	// KV is proportional to the number of layers
 	layerSize += kv / ggml.KV().BlockCount()
 
-	// Flash attention reduces memory usage by ~60% for KV cache and graph
+	// CHANGEME: Testing out fixes to the memory estimations
 	if fa {
 		const faCorrectionFactor = 0.4
 		graphPartialOffload = uint64(float64(graphPartialOffload) * faCorrectionFactor)
 		graphFullOffload = uint64(float64(graphFullOffload) * faCorrectionFactor)
 		layerSize = uint64(float64(layerSize) * faCorrectionFactor)
+		// log all this to the console
+		slog.Info("flash attention memory correction", "factor", faCorrectionFactor)
+		slog.Info("flash attention memory correction", "graph_partial_offload", format.HumanBytes2(graphPartialOffload))
+		slog.Info("flash attention memory correction", "graph_full_offload", format.HumanBytes2(graphFullOffload))
+		slog.Info("flash attention memory correction", "layer_size", format.HumanBytes2(layerSize))
+		slog.Info("flash attention memory correction", "kv", format.HumanBytes2(kv))
+
 	}
 
 	if graphPartialOffload == 0 {
