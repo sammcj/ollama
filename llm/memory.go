@@ -196,7 +196,7 @@ func EstimateGPULayers(gpus []discover.GpuInfo, ggml *GGML, projectors []string,
 			gzo = gpuZeroOverhead
 		}
 		// Only include GPUs that can fit the graph, gpu minimum, the layer buffer and at least more layer
-		if (gpus[i].FreeMemory - overhead) < gzo+max(graphPartialOffload, graphFullOffload)+gpus[i].MinimumMemory+2*layerSize {
+		if gpus[i].FreeMemory < overhead+gzo+max(graphPartialOffload, graphFullOffload)+gpus[i].MinimumMemory+2*layerSize {
 			slog.Debug("gpu has too little memory to allocate any layers",
 				"id", gpus[i].ID,
 				"library", gpus[i].Library,
@@ -242,7 +242,7 @@ func EstimateGPULayers(gpus []discover.GpuInfo, ggml *GGML, projectors []string,
 		for j := len(gpusWithSpace); j > 0; j-- {
 			g := gpusWithSpace[i%j]
 			used := gpuAllocations[g.i] + max(graphPartialOffload, graphFullOffload)
-			if (g.g.FreeMemory - overhead) > used+layerSize {
+			if g.g.FreeMemory > overhead+used+layerSize {
 				gpuAllocations[g.i] += layerSize
 				layerCounts[g.i]++
 				layerCount++
@@ -265,7 +265,7 @@ func EstimateGPULayers(gpus []discover.GpuInfo, ggml *GGML, projectors []string,
 		for j := len(gpusWithSpace); j > 0; j-- {
 			g := gpusWithSpace[layerCount%j]
 			used := gpuAllocations[g.i] + max(graphPartialOffload, graphFullOffload)
-			if (g.g.FreeMemory - overhead) > used+memoryLayerOutput {
+			if g.g.FreeMemory > overhead+used+memoryLayerOutput {
 				gpuAllocations[g.i] += memoryLayerOutput
 				layerCounts[g.i]++
 				layerCount++
