@@ -66,7 +66,8 @@ COPY . .
 ARG OLLAMA_SKIP_CUDA_GENERATE
 ARG OLLAMA_SKIP_ROCM_GENERATE
 ARG OLLAMA_FAST_BUILD
-ARG VERSION
+# CHANGEME - this is due to annoying version checks Ollama does with models that break pulling models
+ARG VERSION=v0.5.1
 RUN --mount=type=cache,target=/root/.ccache \
     if grep "^flags" /proc/cpuinfo|grep avx>/dev/null; then \
         make -j $(nproc) dist ; \
