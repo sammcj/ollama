@@ -142,8 +142,8 @@ func EstimateGPULayers(gpus []discover.GpuInfo, ggml *GGML, projectors []string,
 
 	// CHANGEME: Testing out fixes to the memory estimations
 	if fa {
-		// I don't quite know what 0.05 is the magic number, but it corrects the memory estimates
-		const faCorrectionFactor = 0.05
+		// I don't quite know what 0.054 is the magic number, but it corrects the memory estimates
+		const faCorrectionFactor = 0.054
 		graphPartialOffload = uint64(float64(graphPartialOffload) * faCorrectionFactor)
 		graphFullOffload = uint64(float64(graphFullOffload) * faCorrectionFactor)
 		layerSize = uint64(float64(layerSize) * faCorrectionFactor)
