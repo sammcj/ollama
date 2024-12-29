@@ -97,7 +97,7 @@ Ollama supports importing GGUF models in the Modelfile:
    ollama run example
    ```
 
-### Import from PyTorch or Safetensors
+### Import from Safetensors
 
 See the [guide](docs/import.md) on importing models for more information.
 
@@ -376,6 +376,7 @@ See the [API documentation](./docs/api.md) for all endpoints.
 - [oterm](https://github.com/ggozad/oterm)
 - [Ellama Emacs client](https://github.com/s-kostyaev/ellama)
 - [Emacs client](https://github.com/zweifisch/ollama)
+- [neollama](https://github.com/paradoxical-dev/neollama) UI client for interacting with models from within Neovim
 - [gen.nvim](https://github.com/David-Kunz/gen.nvim)
 - [ollama.nvim](https://github.com/nomnivore/ollama.nvim)
 - [ollero.nvim](https://github.com/marco-souza/ollero.nvim)
@@ -430,6 +431,7 @@ See the [API documentation](./docs/api.md) for all endpoints.
 - [LangChain](https://python.langchain.com/docs/integrations/llms/ollama) and [LangChain.js](https://js.langchain.com/docs/integrations/chat/ollama/) with [example](https://js.langchain.com/docs/tutorials/local_rag/)
 - [Firebase Genkit](https://firebase.google.com/docs/genkit/plugins/ollama)
 - [crewAI](https://github.com/crewAIInc/crewAI)
+- [Yacana](https://remembersoftwares.github.io/yacana/) (User-friendly multi-agent framework for brainstorming and executing predetermined flows with built-in tool integration)
 - [Spring AI](https://github.com/spring-projects/spring-ai) with [reference](https://docs.spring.io/spring-ai/reference/api/chat/ollama-chat.html) and [example](https://github.com/tzolov/ollama-tools)
 - [LangChainGo](https://github.com/tmc/langchaingo/) with [example](https://github.com/tmc/langchaingo/tree/main/examples/ollama-completion-example)
 - [LangChain4j](https://github.com/langchain4j/langchain4j) with [example](https://github.com/langchain4j/langchain4j-examples/tree/main/ollama-examples/src/main/java)
@@ -522,6 +524,7 @@ See the [API documentation](./docs/api.md) for all endpoints.
 - [AI Summmary Helper plugin](https://github.com/philffm/ai-summary-helper)
 - [TextCraft](https://github.com/suncloudsmoon/TextCraft) (Copilot in Word alternative using Ollama)
 - [Alfred Ollama](https://github.com/zeitlings/alfred-ollama) (Alfred Workflow)
+- [TextLLaMA](https://github.com/adarshM84/TextLLaMA) A Chrome Extension that helps you write emails, correct grammar, and translate into any language
 
 ### Supported backends
 
